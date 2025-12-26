@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="assets/centaur_logo.png?v=2" alt="Research Project Management Platform Logo" width="400">
+  <img src="assets/centaur_logo.png?v=3" alt="Research Project Management Platform Logo" width="400">
 </p>
 
 # Research Project Management Platform
