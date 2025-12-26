@@ -1,0 +1,79 @@
+---
+title: "Data Sources and Sample Construction"
+---
+
+```{python}
+#| label: setup-a
+#| include: false
+
+import pandas as pd
+import numpy as np
+import sys
+from pathlib import Path
+from IPython.display import Markdown, display
+
+sys.path.insert(0, 'code')
+from _common import load_diagnostic, show_table
+
+DATA_DIR = Path("data")
+```
+
+This appendix documents data sources, sample construction, and variable definitions.
+
+## A.1 Data Sources {#sec-data-sources}
+
+[Detail each data source with citation, time period, and key variables obtained]
+
+### Primary Data
+
+[Description of primary data source]
+
+### Secondary Data
+
+[Description of secondary data sources]
+
+## A.2 Sample Construction {#sec-sample-construction}
+
+[Document the sample construction process step by step]
+
+```{python}
+#| label: tbl-sample-construction
+#| tbl-cap: "Sample Construction"
+#| echo: false
+#| eval: false
+
+# Example sample construction table
+data = {
+    'Stage': ['Initial records', 'After filter 1', 'After filter 2', 'Final sample'],
+    'Observations': ['[N1]', '[N2]', '[N3]', '[N4]'],
+    'Percent Retained': ['100.0%', '[%]', '[%]', '[%]']
+}
+df = pd.DataFrame(data)
+show_table(df)
+```
+
+## A.3 Variable Definitions {#sec-variable-definitions}
+
+[Define key variables used in the analysis]
+
+| Variable | Description | Source |
+|----------|-------------|--------|
+| `outcome` | [Description] | [Source] |
+| `treatment` | [Description] | [Source] |
+| `control_1` | [Description] | [Source] |
+
+: Key Variable Definitions {#tbl-variables}
+
+## A.4 Summary Statistics {#sec-summary-stats}
+
+[Present summary statistics for key variables]
+
+```{python}
+#| label: tbl-summary-stats
+#| tbl-cap: "Summary Statistics"
+#| echo: false
+#| eval: false
+
+# df = load_diagnostic("summary_statistics")
+# show_table(df)
+```

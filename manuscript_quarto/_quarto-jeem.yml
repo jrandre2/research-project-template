@@ -1,0 +1,35 @@
+# JEEM-specific Quarto configuration
+# Usage: quarto render --profile jeem
+#
+# This profile configures output for JEEM submission:
+# - Double-spaced PDF for review
+# - No TOC in submission version
+# - Standard article class
+
+format:
+  pdf:
+    documentclass: article
+    papersize: letter
+    geometry:
+      - margin=1in
+    fontsize: 12pt
+    linestretch: 2.0
+    number-sections: true
+    toc: false
+    keep-tex: true
+    include-in-header:
+      text: |
+        \usepackage{booktabs}
+        \usepackage{longtable}
+        \usepackage{float}
+        \usepackage{setspace}
+        \doublespacing
+
+  docx:
+    toc: false
+    number-sections: true
+
+  html:
+    toc: true
+    toc-depth: 3
+    number-sections: true

@@ -1,0 +1,73 @@
+---
+title: "Identification and Methods"
+---
+
+```{python}
+#| label: setup-b
+#| include: false
+
+import pandas as pd
+import numpy as np
+import sys
+from pathlib import Path
+from IPython.display import Markdown, display
+
+sys.path.insert(0, 'code')
+from _common import load_diagnostic, show_table, format_pvalue
+
+DATA_DIR = Path("data")
+```
+
+This appendix provides additional details on the identification strategy and estimation methods.
+
+## B.1 Identification Assumptions {#sec-id-assumptions}
+
+[Detail the key identification assumptions and provide evidence supporting them]
+
+### Assumption 1: [Name]
+
+[Explanation and evidence]
+
+### Assumption 2: [Name]
+
+[Explanation and evidence]
+
+## B.2 Pre-Trend Tests {#sec-pretrends}
+
+[Present pre-trend analysis if applicable]
+
+```{python}
+#| label: tbl-pretrends
+#| tbl-cap: "Pre-Trend Tests"
+#| echo: false
+#| eval: false
+
+# df = load_diagnostic("pretrends_ftest")
+# show_table(df)
+```
+
+## B.3 Balance Tests {#sec-balance}
+
+[Present balance tests if applicable]
+
+```{python}
+#| label: tbl-balance
+#| tbl-cap: "Covariate Balance"
+#| echo: false
+#| eval: false
+
+# df = load_diagnostic("balance_table")
+# show_table(df)
+```
+
+## B.4 Estimation Details {#sec-estimation-details}
+
+[Provide additional technical details on estimation]
+
+### Standard Errors
+
+[Describe standard error computation]
+
+### Bandwidth Selection
+
+[Describe bandwidth selection if applicable]

@@ -1,0 +1,65 @@
+---
+title: "Robustness Checks"
+---
+
+```{python}
+#| label: setup-c
+#| include: false
+
+import pandas as pd
+import numpy as np
+import sys
+from pathlib import Path
+from IPython.display import Markdown, display
+
+sys.path.insert(0, 'code')
+from _common import load_diagnostic, show_table
+
+DATA_DIR = Path("data")
+```
+
+This appendix presents robustness checks for the main results. {#sec-robustness-appendix}
+
+## C.1 Alternative Specifications {#sec-alt-specs}
+
+[Present results from alternative model specifications]
+
+```{python}
+#| label: tbl-robustness-specs
+#| tbl-cap: "Robustness to Alternative Specifications"
+#| echo: false
+#| eval: false
+
+# df = load_diagnostic("robustness_specifications")
+# show_table(df)
+```
+
+## C.2 Sample Restrictions {#sec-sample-restrictions}
+
+[Present results from alternative sample restrictions]
+
+## C.3 Placebo Tests {#sec-placebo}
+
+[Present placebo test results]
+
+```{python}
+#| label: tbl-placebo
+#| tbl-cap: "Placebo Test Results"
+#| echo: false
+#| eval: false
+
+# df = load_diagnostic("placebo_tests")
+# show_table(df)
+```
+
+## C.4 Sensitivity Analysis {#sec-sensitivity}
+
+[Present sensitivity analysis results]
+
+### Parameter Sensitivity
+
+[Results for different parameter choices]
+
+### Measurement Sensitivity
+
+[Results for alternative variable definitions]

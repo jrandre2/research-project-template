@@ -1,0 +1,149 @@
+---
+author:
+  - name: "[Author 1]"
+    affiliations:
+      - name: "[University Name]"
+        department: "[Department]"
+    email: "[email@example.com]"
+  - name: "[Author 2]"
+    affiliations:
+      - name: "[University Name]"
+        department: "[Department]"
+abstract: |
+  [Your abstract here. 150-250 words describing the research question,
+  methods, key findings, and contribution to the literature.]
+
+  Keywords: [Keyword 1]; [Keyword 2]; [Keyword 3]; [Keyword 4]
+keywords:
+  - "[Keyword 1]"
+  - "[Keyword 2]"
+  - "[Keyword 3]"
+jel-codes:
+  - "[JEL1]"
+  - "[JEL2]"
+date: last-modified
+format:
+  html: default
+  pdf: default
+  docx: default
+---
+
+```{python}
+#| label: setup
+#| include: false
+
+import pandas as pd
+import numpy as np
+import sys
+from pathlib import Path
+from IPython.display import Markdown, display
+
+sys.path.insert(0, 'code')
+from _common import load_diagnostic, show_table, format_pvalue, format_ci, add_significance_stars
+
+DATA_DIR = Path("data")
+FIG_DIR = Path("figures")
+```
+
+# Introduction {#sec-introduction}
+
+[Introduce your research question and motivation. 3-5 paragraphs establishing:]
+
+- The empirical puzzle or policy question
+- Why existing approaches are insufficient
+- Your contribution and approach
+- Preview of findings
+
+> **Research Questions:**
+>
+> **RQ1:** [First research question]
+>
+> **RQ2:** [Second research question]
+
+# Related Literature {#sec-literature}
+
+[Review relevant literature in 2-3 subsections organized by theme.]
+
+## [Theme 1] {#sec-lit-theme1}
+
+[First body of literature]
+
+## [Theme 2] {#sec-lit-theme2}
+
+[Second body of literature]
+
+# Data and Empirical Strategy {#sec-methods}
+
+## Study Context {#sec-context}
+
+[Describe your empirical setting]
+
+## Data Sources {#sec-data}
+
+[Describe data sources with proper citations]
+
+## Sample Construction {#sec-sample}
+
+[Document sample construction with observation counts]
+
+## Identification Strategy {#sec-identification}
+
+[Describe your identification strategy with estimating equations]
+
+$$
+Y_{it} = \beta X_{it} + \gamma Z_i + \varepsilon_{it}
+$$ {#eq-main}
+
+where $Y_{it}$ is the outcome for unit $i$ at time $t$, $X_{it}$ is the treatment variable, and $Z_i$ are controls.
+
+# Results {#sec-results}
+
+## Main Results {#sec-main-results}
+
+[Present main results with tables and figures]
+
+```{python}
+#| label: tbl-main-results
+#| tbl-cap: "Main Estimation Results"
+#| echo: false
+#| eval: false
+
+# Example: Load and display main results
+# df = load_diagnostic("main_results")
+# show_table(df)
+```
+
+## Heterogeneity {#sec-heterogeneity}
+
+[Present heterogeneity analysis if applicable]
+
+# Discussion {#sec-discussion}
+
+## Interpretation {#sec-interpretation}
+
+[Interpret findings in context of theory and prior work]
+
+## Robustness and Limitations {#sec-robustness}
+
+[Discuss robustness checks and limitations]
+
+See @sec-robustness-appendix for detailed robustness results.
+
+## Policy Implications {#sec-policy}
+
+[Discuss policy implications]
+
+# Conclusion {#sec-conclusion}
+
+[Summarize findings, contribution, and directions for future research. 2-3 paragraphs covering:]
+
+- Main findings and their significance
+- Contribution to the literature
+- Limitations and future research directions
+
+# References {.unnumbered}
+
+::: {#refs}
+:::
+
+{{< pagebreak >}}

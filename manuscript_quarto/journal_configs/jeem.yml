@@ -1,0 +1,172 @@
+# JEEM - Journal of Environmental Economics and Management
+# Full submission guidelines: https://www.elsevier.com/journals/journal-of-environmental-economics-and-management/0095-0696/guide-for-authors
+
+journal:
+  name: "Journal of Environmental Economics and Management"
+  abbreviation: "JEEM"
+  publisher: "Elsevier"
+  url: "https://www.sciencedirect.com/journal/journal-of-environmental-economics-and-management"
+  submission_url: "https://www.editorialmanager.com/jeem"
+
+scope:
+  primary_topics:
+    - Environmental policy design and instrument choice
+    - Nonmarket valuation methods
+    - Environmental behavior (firms, households, individuals)
+    - Renewable and non-renewable resource management
+    - Climate change
+  intersection_topics:
+    - Development economics
+    - Energy economics
+    - Industrial organization
+    - Urban economics
+    - Transport economics
+    - Health economics
+    - Agricultural economics
+  not_accepted:
+    - Book reviews
+    - Literature reviews
+    - Policy briefs
+    - Pure replications
+    - Simple case study applications
+    - Theoretical extensions of well-known models without novel insights
+
+submission:
+  fee: 100  # USD
+  student_fee: 50  # USD
+  peer_review: "double-anonymized"
+  transfer_fee_waived: true  # No fee if transferred from another Elsevier journal
+
+formatting:
+  citation_style: "author-year"
+  csl_file: "apa.csl"  # APA is compatible with JEEM author-year style
+  jel_codes: 6  # maximum
+  si_units: true
+  file_format: "editable source files (.doc/.docx or .tex)"
+
+regular_paper:
+  word_limit: null  # No strict limit for regular papers
+  exhibit_limit: null
+  abstract_max_words: 250
+  keywords_min: 1
+  keywords_max: 7
+
+short_paper:
+  word_limit: 3000
+  exhibit_limit: 5  # tables + figures combined
+  table_page_limit: 1
+  figure_page_limit: 1
+  appendix_location: "online_only"
+  word_count_includes:
+    - main_body
+    - footnotes
+    - endnotes
+  word_count_excludes:
+    - title
+    - author_names
+    - abstract
+    - acknowledgments
+    - references
+    - exhibits
+  word_count_tool: "http://countwordsfree.com/#"
+
+required_sections:
+  title_page:
+    description: "Separate file with identifying information"
+    contents:
+      - article_title
+      - author_names_and_affiliations
+      - corresponding_author_email
+      - acknowledgments
+      - declaration_of_competing_interests
+      - funding_sources
+  anonymized_manuscript:
+    description: "Main manuscript without author information"
+    contents:
+      - abstract
+      - keywords
+      - jel_codes
+      - main_body
+      - references
+      - tables
+      - figures
+
+optional_sections:
+  highlights:
+    description: "Short bullet points capturing novel results"
+    count: "3-5"
+    max_chars_each: 85
+    submit_as: "separate editable file"
+  graphical_abstract:
+    description: "Visual summary of article contents"
+    min_size: "531x1328 pixels (h x w)"
+    preferred_formats: ["TIFF", "EPS", "PDF", "MS Office"]
+
+declarations:
+  competing_interests:
+    required: true
+    tool: "declarations tool"
+    no_declaration_text: "I have nothing to declare"
+  funding_sources:
+    required: true
+    format: "Funding: This work was supported by [Funder Name] [grant number xxxx]."
+    no_funding_text: "This research did not receive any specific grant from funding agencies in the public, commercial, or not-for-profit sectors."
+  generative_ai:
+    required_if_used: true
+    section_title: "Declaration of generative AI and AI-assisted technologies in the manuscript preparation process"
+    format: "During the preparation of this work the author(s) used [NAME OF TOOL] in order to [REASON]. After using this tool/service, the author(s) reviewed and edited the content as needed and take(s) full responsibility for the content of the published article."
+  author_contributions:
+    format: "CRediT"
+    roles:
+      - Conceptualization
+      - Data curation
+      - Formal analysis
+      - Funding acquisition
+      - Investigation
+      - Methodology
+      - Project administration
+      - Resources
+      - Software
+      - Supervision
+      - Validation
+      - Visualization
+      - Writing – original draft
+      - Writing – review and editing
+
+artwork:
+  formats:
+    vector: ["EPS", "PDF"]
+    halftone: ["TIFF", "JPG", "PNG"]
+  resolution:
+    halftone_min_dpi: 300
+    line_drawing_min_dpi: 1000
+    combination_min_dpi: 500
+  single_column_min_width: 1063  # pixels at 300 dpi
+  full_page_min_width: 2244  # pixels at 300 dpi
+
+references:
+  style: "author-year"
+  abbreviate_journals: true
+  source: "List of Title Word Abbreviations (LTWA)"
+  examples:
+    journal: "Van der Geer, J., Handgraaf, T., Lupton, R.A., 2020. The art of writing a scientific article. J. Sci. Commun. 163, 51–59. https://doi.org/10.1016/j.sc.2020.00372."
+    book: "Strunk Jr., W., White, E.B., 2000. The Elements of Style, fourth ed. Longman, New York."
+    chapter: "Mettam, G.R., Adams, L.B., 2023. How to prepare an electronic version of your article, in: Jones, B.S., Smith, R.Z. (Eds.), Introduction to the Electronic Age. E-Publishing Inc., New York, pp. 281–304."
+
+data_policy:
+  option: "C"
+  requirements:
+    - "Deposit research data in a relevant data repository"
+    - "Cite and link to dataset in article"
+    - "Or provide statement explaining why data cannot be shared"
+
+# Manuscript fit assessment (customize for your project)
+fit_assessment:
+  primary_topic: "[Your primary topic]"
+  intersection: "[Relevant intersection fields]"
+  novel_contribution: "[Your novel contribution]"
+  strengths: []
+  potential_concerns: []
+
+# JEL codes used in this manuscript (customize for your project)
+manuscript_jel_codes: []

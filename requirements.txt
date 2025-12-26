@@ -1,0 +1,38 @@
+# Core data analysis
+pandas>=2.0.0
+numpy>=1.24.0
+pyarrow>=12.0.0  # For parquet files
+
+# Visualization
+matplotlib>=3.7.0
+seaborn>=0.12.0
+
+# Statistics
+scipy>=1.10.0
+statsmodels>=0.14.0
+
+# Geospatial (uncomment if needed)
+# geopandas>=0.13.0
+# shapely>=2.0.0
+# pyproj>=3.5.0
+
+# Spatial econometrics (uncomment if needed)
+# libpysal>=4.7.0
+# esda>=2.4.0
+# spreg>=1.3.0
+
+# Machine learning (uncomment if needed)
+# scikit-learn>=1.2.0
+
+# Configuration
+pyyaml>=6.0
+
+# Jupyter/Quarto rendering
+jupyter>=1.0.0
+tabulate>=0.9.0
+ipython>=8.0.0
+
+# Development (uncomment if needed)
+# pytest>=7.0.0
+# black>=23.0.0
+# flake8>=6.0.0

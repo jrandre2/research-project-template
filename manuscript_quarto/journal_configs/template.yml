@@ -1,0 +1,80 @@
+# [Journal Name] Configuration Template
+# Full guidelines: [URL]
+#
+# Instructions:
+# 1. Copy this file and rename to match the journal (e.g., qje.yml)
+# 2. Fill in all fields with journal-specific information
+# 3. Add a corresponding _quarto-[name].yml profile if needed
+# 4. Update _quarto.yml to include the new profile in the group list
+
+journal:
+  name: "[Full Journal Name]"
+  abbreviation: "[ABBREV]"
+  publisher: "[Publisher]"
+  url: "[Journal URL]"
+  submission_url: "[Editorial Manager URL]"
+
+scope:
+  primary_topics:
+    - "[Topic 1]"
+    - "[Topic 2]"
+  not_accepted:
+    - "[Type 1]"
+
+submission:
+  fee: null  # USD
+  peer_review: "double-anonymized"  # or "single-anonymized"
+
+formatting:
+  citation_style: "author-year"  # or "numeric"
+  csl_file: "apa.csl"  # Update if journal uses different style
+  jel_codes: null  # Maximum number of JEL codes, if applicable
+
+regular_paper:
+  word_limit: null
+  abstract_max_words: null
+  keywords_max: null
+
+short_paper:
+  word_limit: null
+  exhibit_limit: null
+
+required_sections:
+  title_page:
+    description: "[Description]"
+    contents: []
+  anonymized_manuscript:
+    description: "[Description]"
+    contents: []
+
+declarations:
+  competing_interests:
+    required: false
+  funding_sources:
+    required: false
+  data_availability:
+    required: false
+
+artwork:
+  formats:
+    preferred: []
+    acceptable: []
+  resolution:
+    min_dpi: 300
+
+references:
+  style: "author-year"
+
+data_policy:
+  requirements: []
+
+# Manuscript fit assessment (customize for your project)
+fit_assessment:
+  primary_topic: "[Your primary topic]"
+  intersection: "[Relevant intersection fields]"
+  novel_contribution: "[Your novel contribution]"
+  strengths: []
+  potential_concerns: []
+
+# JEL codes used in this manuscript (customize for your project)
+manuscript_jel_codes: []

@@ -1,0 +1,81 @@
+# Python
+.venv/
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+env/
+venv/
+pip-log.txt
+pip-delete-this-directory.txt
+
+# Data (raw and working)
+data_raw/
+data_work/
+*.parquet
+*.gpkg
+*.gdb/
+*.shp
+*.dbf
+*.shx
+*.prj
+
+# Quarto
+manuscript_quarto/_freeze/
+manuscript_quarto/.quarto/
+manuscript_quarto/_output/
+*.tex
+!manuscript_quarto/_output/*.pdf
+!manuscript_quarto/_output/*.docx
+!manuscript_quarto/_output/*.html
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+.spyderproject
+.spyproject
+
+# OS
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# Secrets and credentials
+.env
+.env.local
+credentials.*
+secrets.*
+*.pem
+*.key
+
+# Large files
+*.zip
+*.tar.gz
+*.7z
+*.rar
+
+# Logs
+*.log
+logs/
+
+# Jupyter
+.ipynb_checkpoints/
+*.ipynb
+
+# Testing
+.pytest_cache/
+.coverage
+htmlcov/
+
+# Build
+build/
+dist/
+*.egg-info/

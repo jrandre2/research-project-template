@@ -1,0 +1,25 @@
+#!/bin/bash
+# Quarto wrapper script
+#
+# This script allows using a project-local quarto installation.
+# Set QUARTO_BIN environment variable to override the default location.
+#
+# Usage:
+#   ../tools/bin/quarto render
+#   ../tools/bin/quarto preview
+
+QUARTO_BIN="${QUARTO_BIN:-$HOME/local/quarto/bin/quarto}"
+
+if [ ! -f "$QUARTO_BIN" ]; then
+    # Fall back to system quarto
+    QUARTO_BIN="$(which quarto 2>/dev/null)"
+fi
+
+if [ -z "$QUARTO_BIN" ] || [ ! -f "$QUARTO_BIN" ]; then
+    echo "ERROR: Quarto not found." >&2
+    echo "Install Quarto from https://quarto.org/docs/get-started/" >&2
+    echo "Or set QUARTO_BIN environment variable to your quarto binary." >&2
+    exit 1
+fi
+
+exec "$QUARTO_BIN" "$@"

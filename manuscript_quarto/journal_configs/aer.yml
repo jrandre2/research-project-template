@@ -1,0 +1,88 @@
+# AER - American Economic Review
+# Full submission guidelines: https://www.aeaweb.org/journals/aer/submissions/guidelines
+
+journal:
+  name: "American Economic Review"
+  abbreviation: "AER"
+  publisher: "American Economic Association"
+  url: "https://www.aeaweb.org/journals/aer"
+  submission_url: "https://www.editorialexpress.com/aer"
+
+scope:
+  primary_topics:
+    - All areas of economics
+    - Theoretical and empirical contributions
+    - Policy-relevant research
+  not_accepted:
+    - Papers currently under review elsewhere
+    - Papers previously published
+
+submission:
+  fee: 350  # USD for non-members
+  member_fee: 175  # USD for AEA members
+  peer_review: "double-anonymized"
+  desk_rejection_rate: "high"
+
+formatting:
+  citation_style: "author-year"
+  csl_file: "apa.csl"
+  jel_codes: 3  # typically 3 codes
+  file_format: "PDF for initial submission"
+
+regular_paper:
+  word_limit: null  # No strict limit
+  abstract_max_words: 150
+  keywords_max: 5
+
+required_sections:
+  title_page:
+    description: "Separate file with identifying information"
+    contents:
+      - article_title
+      - author_names_and_affiliations
+      - corresponding_author_email
+      - acknowledgments
+  anonymized_manuscript:
+    description: "Main manuscript without author information"
+    contents:
+      - abstract
+      - jel_codes
+      - main_body
+      - references
+      - tables
+      - figures
+
+declarations:
+  data_availability:
+    required: true
+    description: "Data and code must be deposited in AEA Data and Code Repository"
+  funding_sources:
+    required: true
+
+artwork:
+  formats:
+    preferred: ["EPS", "PDF"]
+    acceptable: ["TIFF", "PNG"]
+  resolution:
+    min_dpi: 300
+
+references:
+  style: "author-year"
+  examples:
+    journal: "Author, First, and Second Author. 2024. 'Article Title.' American Economic Review 114 (5): 1234–1267."
+
+data_policy:
+  requirements:
+    - "All data and code must be deposited"
+    - "Replication package required for acceptance"
+    - "AEA Data Editor reviews packages"
+
+# Manuscript fit assessment (customize for your project)
+fit_assessment:
+  primary_topic: "[Your primary topic]"
+  novel_contribution: "[Your novel contribution]"
+  strengths: []
+  potential_concerns: []
+
+# JEL codes used in this manuscript (customize for your project)
+manuscript_jel_codes: []

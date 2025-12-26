@@ -1,0 +1,35 @@
+# AER-specific Quarto configuration
+# Usage: quarto render --profile aer
+#
+# This profile configures output for American Economic Review submission:
+# - 1.5 line spacing for review
+# - 12pt font
+# - Standard article class
+
+format:
+  pdf:
+    documentclass: article
+    papersize: letter
+    geometry:
+      - margin=1in
+    fontsize: 12pt
+    linestretch: 1.5
+    number-sections: true
+    toc: false
+    keep-tex: true
+    include-in-header:
+      text: |
+        \usepackage{booktabs}
+        \usepackage{longtable}
+        \usepackage{float}
+        \usepackage{setspace}
+        \onehalfspacing
+
+  docx:
+    toc: false
+    number-sections: true
+
+  html:
+    toc: true
+    toc-depth: 3
+    number-sections: true

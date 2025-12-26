@@ -1,0 +1,78 @@
+project:
+  type: book
+  output-dir: _output
+
+# Journal-specific profiles
+# Usage: quarto render --profile jeem
+# Profile configs are in _quarto-{profile}.yml files
+profile:
+  default: default
+  group:
+    - [default, jeem, aer]
+
+book:
+  title: "[Your Paper Title]"
+  subtitle: "[Descriptive subtitle with methodology and study context]"
+  author:
+    - "[Author 1]"
+    - "[Author 2]"
+  downloads: [pdf, docx]
+  chapters:
+    - index.qmd
+  appendices:
+    - appendix-a-data.qmd
+    - appendix-b-methods.qmd
+    - appendix-c-robustness.qmd
+
+format:
+  html:
+    toc: true
+    toc-depth: 3
+    number-sections: true
+    code-fold: true
+    theme: cosmo
+
+  pdf:
+    documentclass: scrreprt
+    papersize: letter
+    geometry:
+      - margin=1in
+    number-sections: true
+    toc: true
+    keep-tex: true
+    include-in-header:
+      text: |
+        \usepackage{booktabs}
+        \usepackage{longtable}
+        \usepackage{float}
+        \usepackage{needspace}
+        \renewenvironment{abstract}{\par\bigskip\noindent\textbf{Abstract}\par\smallskip}{\par\bigskip}
+
+  docx:
+    toc: true
+    toc-depth: 2
+    number-sections: true
+    reference-doc: reference.docx
+    highlight-style: github
+
+bibliography: references.bib
+csl: apa.csl
+
+execute:
+  freeze: auto
+  cache: false
+  warning: false
+  message: false
+  echo: false
+
+crossref:
+  fig-prefix: "Figure"
+  tbl-prefix: "Table"
+  eq-prefix: "Equation"
+  sec-prefix: "Section"
+
+knitr:
+  opts_chunk:
+    echo: false
+    fig.align: center
+    out.width: "100%"
