@@ -37,6 +37,15 @@ review_archive : Archive current cycle and reset
 review_verify : Run verification checklist
 review_report : Generate summary of all review cycles
 
+# Journal Configuration
+journal_list : List available journal configurations
+journal_validate : Validate journal config against template
+    Options: --config
+journal_compare : Compare manuscript to journal requirements
+    Options: --journal, --manuscript
+journal_parse : Parse raw guidelines into config
+    Options: --input, --output, --journal
+
 Usage
 -----
     python src/pipeline.py ingest_data
@@ -122,6 +131,45 @@ def parse_args() -> argparse.Namespace:
     sub.add_parser('review_verify', help='Run verification checklist')
     sub.add_parser('review_report', help='Generate summary of all review cycles')
 
+    # Journal Configuration Commands
+    sub.add_parser('journal_list', help='List available journal configurations')
+
+    p_jval = sub.add_parser('journal_validate', help='Validate journal config')
+    p_jval.add_argument(
+        '--config', '-c',
+        default='natural_hazards',
+        help='Config file name without .yml (default: natural_hazards)'
+    )
+
+    p_jcmp = sub.add_parser('journal_compare', help='Compare manuscript to journal')
+    p_jcmp.add_argument(
+        '--journal', '-j',
+        default='natural_hazards',
+        help='Journal config name (default: natural_hazards)'
+    )
+    p_jcmp.add_argument(
+        '--manuscript', '-m',
+        default=None,
+        help='Path to manuscript directory (default: manuscript_quarto/)'
+    )
+
+    p_jparse = sub.add_parser('journal_parse', help='Parse guidelines into config')
+    p_jparse.add_argument(
+        '--input', '-i',
+        required=True,
+        help='Input file with raw guidelines'
+    )
+    p_jparse.add_argument(
+        '--output', '-o',
+        default='new_journal.yml',
+        help='Output config filename (default: new_journal.yml)'
+    )
+    p_jparse.add_argument(
+        '--journal', '-j',
+        default=None,
+        help='Journal name (optional)'
+    )
+
     return p.parse_args()
 
 
@@ -184,6 +232,27 @@ def main():
     elif args.cmd == 'review_report':
         from stages import s07_reviews
         s07_reviews.report()
+
+    # Journal Configuration Commands
+    elif args.cmd == 'journal_list':
+        from stages import s08_journal_parser
+        s08_journal_parser.list_configs()
+
+    elif args.cmd == 'journal_validate':
+        from stages import s08_journal_parser
+        s08_journal_parser.validate_config(args.config)
+
+    elif args.cmd == 'journal_compare':
+        from stages import s08_journal_parser
+        s08_journal_parser.compare_manuscript(args.journal, args.manuscript)
+
+    elif args.cmd == 'journal_parse':
+        from stages import s08_journal_parser
+        s08_journal_parser.parse_guidelines(
+            input_file=args.input,
+            output_file=args.output,
+            journal_name=args.journal
+        )
 
 
 if __name__ == '__main__':

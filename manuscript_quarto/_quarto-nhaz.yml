@@ -1,0 +1,42 @@
+# Natural Hazards (Springer) - Quarto Configuration
+# Usage: quarto render --profile nhaz
+#
+# This profile configures output for Natural Hazards submission:
+# - Double-spaced PDF for review
+# - 12pt font
+# - 1in margins
+# - Line numbers required
+# - Springer author-date citation style
+
+# Citation style for Natural Hazards (Springer author-date)
+csl: csl/springer-basic-author-date.csl
+
+format:
+  pdf:
+    documentclass: article
+    papersize: letter
+    geometry:
+      - margin=1in
+    fontsize: 12pt
+    linestretch: 2.0
+    number-sections: true
+    toc: false
+    keep-tex: true
+    include-in-header:
+      text: |
+        \usepackage{booktabs}
+        \usepackage{longtable}
+        \usepackage{float}
+        \usepackage{setspace}
+        \usepackage{lineno}
+        \doublespacing
+        \linenumbers
+
+  docx:
+    toc: false
+    number-sections: true
+
+  html:
+    toc: true
+    toc-depth: 3
+    number-sections: true

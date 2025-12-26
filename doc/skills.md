@@ -170,11 +170,13 @@ Render manuscript for specific journal.
 ```bash
 cd manuscript_quarto && ./render_all.sh --profile jeem
 cd manuscript_quarto && ./render_all.sh --profile aer
+cd manuscript_quarto && ./render_all.sh --profile nhaz
 ```
 
 **Available profiles:**
 - `jeem` - Journal of Environmental Economics and Management
 - `aer` - American Economic Review
+- `nhaz` - Natural Hazards (Springer)
 
 ### /preview
 
@@ -183,6 +185,69 @@ Live preview manuscript.
 ```bash
 cd manuscript_quarto && ../tools/bin/quarto preview
 ```
+
+---
+
+## Journal Configuration Skills
+
+### /journal-list
+
+List available journal configurations.
+
+```bash
+python src/pipeline.py journal_list
+```
+
+Shows all available journal configs and templates in `manuscript_quarto/journal_configs/`.
+
+### /journal-validate
+
+Validate a journal configuration against the comprehensive template.
+
+```bash
+python src/pipeline.py journal_validate --config natural_hazards
+python src/pipeline.py journal_validate -c jeem
+```
+
+Reports missing sections and key fields.
+
+### /journal-compare
+
+Compare manuscript against journal requirements.
+
+```bash
+python src/pipeline.py journal_compare --journal natural_hazards
+python src/pipeline.py journal_compare -j jeem --manuscript manuscript_quarto/
+```
+
+Checks:
+- Required files present
+- Abstract word limits
+- Keyword count
+- Figure resolution requirements
+- Reference style
+- Submission checklist
+
+### /journal-parse
+
+Parse raw journal guidelines into structured YAML configuration.
+
+```bash
+python src/pipeline.py journal_parse --input guidelines.txt --output new_journal.yml
+python src/pipeline.py journal_parse -i guidelines.txt -o nature.yml --journal "Nature"
+```
+
+**Options:**
+- `--input, -i`: Input file with raw guidelines text (required)
+- `--output, -o`: Output config filename (default: new_journal.yml)
+- `--journal, -j`: Journal name (optional)
+
+**Workflow:**
+1. Copy journal author guidelines to a text file
+2. Run parser to create initial config
+3. Review and fill in missing fields
+4. Create Quarto profile if needed (`_quarto-{abbrev}.yml`)
+5. Validate with `journal_validate`
 
 ---
 

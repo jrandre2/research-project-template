@@ -1,0 +1,717 @@
+# ============================================================
+# COMPREHENSIVE JOURNAL CONFIGURATION TEMPLATE
+# ============================================================
+#
+# This template captures ALL submission requirements from journal author
+# guidelines. Use this as the basis for creating new journal configurations.
+#
+# Instructions:
+# 1. Copy this file and rename to match the journal (e.g., nature.yml)
+# 2. Fill in all fields with journal-specific information
+# 3. Use null for fields not specified in guidelines
+# 4. Add a corresponding _quarto-[abbrev].yml profile if needed
+# 5. Update _quarto.yml to include the new profile in the group list
+#
+# ============================================================
+
+# --- SECTION 1: JOURNAL METADATA ---
+journal:
+  name: ""                    # Full journal name
+  abbreviation: ""            # Standard abbreviation
+  publisher: ""               # Publisher name (Springer, Elsevier, etc.)
+  issn: ""                    # Print ISSN
+  eissn: ""                   # Electronic ISSN
+  url: ""                     # Journal homepage URL
+  submission_url: ""          # Editorial Manager / ScholarOne URL
+  guidelines_url: ""          # Author guidelines URL
+  contact_email: ""           # Editorial office email
+
+# --- SECTION 2: SCOPE & TOPICS ---
+scope:
+  description: ""             # Brief description of journal scope
+  primary_topics: []          # Main topics covered
+  secondary_topics: []        # Related/intersection topics
+  not_accepted: []            # Types of submissions not accepted
+  interdisciplinary: false    # Whether interdisciplinary work is encouraged
+
+# --- SECTION 3: SUBMISSION REQUIREMENTS ---
+submission:
+  system: ""                  # e.g., "Editorial Manager", "ScholarOne", "OJS"
+  fee: null                   # Submission fee amount (null if none)
+  currency: "USD"             # Currency for fees
+  peer_review: ""             # "single-blind", "double-blind", "open"
+
+  # Cover letter requirements
+  cover_letter:
+    required: true
+    contents:
+      - "manuscript title"
+      - "brief summary of significance"
+      - "confirmation of originality"
+      - "no simultaneous submission statement"
+      - "all authors' approval confirmation"
+      - "conflict of interest disclosure"
+      - "suggested reviewers (optional)"
+      - "excluded reviewers (optional)"
+    template: |
+      Dear Editor,
+
+      We are pleased to submit our manuscript entitled "[TITLE]" for consideration
+      for publication in [JOURNAL NAME].
+
+      [Brief summary of research significance and key findings - 2-3 sentences]
+
+      We confirm that:
+      - This work has not been published previously and is not under consideration elsewhere
+      - All authors have approved the manuscript and agree with its submission
+      - [Conflict of interest statement or "The authors have no conflicts of interest to declare"]
+
+      [Optional: Suggested reviewers with institutional emails]
+      [Optional: Reviewers to exclude with brief justification]
+
+      We believe this manuscript is well-suited for [JOURNAL] because [fit justification].
+
+      Thank you for your consideration.
+
+      Sincerely,
+      [Corresponding Author Name]
+
+  # Required submission documents
+  required_documents:
+    title_page:
+      separate_file: true
+      filename_convention: ""
+    anonymized_manuscript:
+      required: true
+      what_to_remove:
+        - "author names"
+        - "affiliations"
+        - "acknowledgments"
+        - "funding details"
+    figures:
+      separate_files: false
+      embedded: true
+    tables:
+      separate_files: false
+      embedded: true
+    supplementary_materials:
+      separate_files: true
+    author_agreement:
+      required: false
+      form_url: ""
+    copyright_form:
+      timing: "after acceptance"
+    data_availability_statement:
+      required: true
+      location: ""
+
+  # Anonymization for blind review
+  anonymization:
+    remove_author_names: true
+    remove_affiliations: true
+    remove_acknowledgments: true
+    remove_funding_details: true
+    blind_self_citations: true
+    remove_identifying_headers: true
+
+  prior_publication:
+    preprints_allowed: true
+    preprint_policy: ""
+    working_papers_allowed: true
+    conference_papers_allowed: true
+    thesis_allowed: true
+
+  simultaneous_submission: false
+
+  source_files:
+    required: true
+    formats: []               # [".docx", ".tex"]
+
+  # Submission checklist
+  checklist:
+    - "Cover letter uploaded"
+    - "Title page with all author information"
+    - "Anonymous manuscript (no author info)"
+    - "Abstract within word limit"
+    - "Keywords included"
+    - "Figures meet resolution requirements"
+    - "References complete with DOIs"
+    - "Declarations section included"
+    - "Data availability statement"
+    - "Supplementary files (if any)"
+
+# --- SECTION 4: TITLE PAGE ---
+title_page:
+  separate_file: false
+  contents:
+    title:
+      max_chars: null
+      running_title_max_chars: null
+      requirements: []        # ["concise", "informative", "no abbreviations"]
+    authors:
+      format: ""              # "First Last", "Last, First"
+      orcid_required: false
+      orcid_encouraged: true
+      orcid_format: "16-digit"
+    affiliations:
+      format: ""              # "institution, department, city, state, country"
+      include_address: false
+    corresponding_author:
+      email_required: true
+      phone_required: false
+      active_email: true
+    acknowledgments:
+      location: ""            # "title_page" or "end_of_manuscript"
+
+  llm_policy:
+    disclosure_required: true
+    section_name: ""          # "Methods" or suitable alternative
+    template_text: ""         # Template for LLM disclosure
+    copy_editing_exempt: true
+    authorship_not_allowed: true
+
+# --- SECTION 5: ABSTRACT ---
+abstract:
+  min_words: null
+  max_words: 250
+  structured: false
+  structure_headings: []      # ["Background", "Methods", "Results", "Conclusions"]
+  no_abbreviations: true
+  no_citations: true
+  no_references: true
+
+# --- SECTION 6: KEYWORDS ---
+keywords:
+  min: 4
+  max: 6
+  indexing_note: ""
+  format: ""                  # Capitalization, separator
+
+# --- SECTION 7: TEXT FORMATTING ---
+text_formatting:
+  file_formats: []            # [".docx", ".doc", ".tex"]
+  latex_accepted: false
+  latex_template: ""          # URL or name of template
+
+  font:
+    family: ""                # "Times New Roman", "Times Roman"
+    size_pt: 12
+    style: "plain"            # "plain", "serif", "sans-serif"
+
+  line_spacing: ""            # "double", "1.5", "single"
+
+  margins:
+    unit: "in"
+    top: 1
+    bottom: 1
+    left: 1
+    right: 1
+
+  page_numbers:
+    required: true
+    location: ""              # "bottom center", "top right"
+    automatic: true
+
+  line_numbers:
+    required: false
+    continuous: true
+    restart_each_page: false
+
+  headings:
+    system: ""                # "decimal", "numbered", "unnumbered"
+    max_levels: 3
+
+  italics_for_emphasis: true
+  field_functions: false      # Whether to use Word field functions
+
+  indents:
+    use_tabs: true
+    no_space_bar: true
+
+  tables:
+    use_table_function: true
+    no_spreadsheets: true
+
+  equations:
+    editor: ""                # "equation editor", "MathType", "LaTeX"
+
+  footnotes:
+    allowed: true
+    format: ""                # "superscript numbers"
+    numbered_consecutively: true
+    table_footnotes: ""       # "superscript lowercase letters"
+    no_reference_only: true
+    no_weblinks: false
+    use_footnotes_not_endnotes: true
+
+  abbreviations:
+    define_at_first_use: true
+
+# --- SECTION 8: REFERENCES ---
+references:
+  style: ""                   # "author-year", "numeric", "Vancouver"
+  csl_file: ""                # CSL file to use
+  in_text_format: ""          # "(Author Year)", "[1]", "Author (Year)"
+
+  list_format:
+    alphabetical: true
+    by_first_author_then_chronological: true
+    include_doi: true
+    doi_format: ""            # "https://doi.org/..." or "doi:..."
+    journal_abbreviations: true
+    abbreviation_source: ""   # "ISSN LTWA"
+
+  personal_communications:
+    in_reference_list: false
+    in_text_only: true
+
+  unpublished_works:
+    in_reference_list: false
+    in_text_only: true
+
+  examples:
+    journal_article: ""
+    journal_article_with_doi: ""
+    book: ""
+    book_chapter: ""
+    edited_volume: ""
+    online_document: ""
+    dissertation: ""
+    conference_paper: ""
+    preprint: ""
+    dataset: ""
+
+# --- SECTION 9: STATEMENTS & DECLARATIONS ---
+declarations:
+  section_title: "Statements and Declarations"
+  location: ""                # "after references", "title page", "before references"
+
+  funding:
+    required: true
+    format: ""                # Template for funding statement
+    no_funding_statement: ""  # Statement when no funding received
+
+  competing_interests:
+    required: true
+    timeframe_years: 3
+    categories:
+      financial: true
+      non_financial: true
+    examples:
+      financial:
+        - "stocks or shares"
+        - "consultation fees"
+        - "patents"
+        - "research grants"
+        - "speaker honoraria"
+        - "travel support"
+      non_financial:
+        - "position on editorial board"
+        - "advisory board membership"
+        - "personal relationships"
+        - "professional interests"
+        - "mentoring relationships"
+    no_conflicts_statement: ""
+
+  author_contributions:
+    required: false
+    encouraged: true
+    format: ""                # "CRediT", "free text"
+    roles:                    # CRediT taxonomy roles
+      - "Conceptualization"
+      - "Data curation"
+      - "Formal analysis"
+      - "Funding acquisition"
+      - "Investigation"
+      - "Methodology"
+      - "Project administration"
+      - "Resources"
+      - "Software"
+      - "Supervision"
+      - "Validation"
+      - "Visualization"
+      - "Writing - original draft"
+      - "Writing - review and editing"
+    example: ""
+
+  ethics_approval:
+    required_if_applicable: true
+    human_subjects: true
+    animal_research: true
+    irb_statement_required: true
+    compliance_section: ""    # Section name for ethics statements
+
+  informed_consent:
+    required_if_applicable: true
+
+  data_availability:
+    required: true
+    statement_options: []     # Template statements
+
+# --- SECTION 10: TABLES ---
+tables:
+  numbering: "arabic"         # "arabic", "roman"
+  citation_style: ""          # "Table 1", "Tab. 1"
+  consecutive: true
+
+  caption:
+    location: ""              # "above", "below"
+    format: ""                # Description of caption format
+
+  footnotes:
+    format: ""                # "superscript lowercase letters"
+    significance: ""          # "asterisks for significance values"
+
+  embedded_in_text: true
+  separate_files: false
+  editable_required: true     # No images of tables
+
+  previously_published:
+    cite_source: true
+
+# --- SECTION 11: FIGURES/ARTWORK ---
+artwork:
+  submission_format: ""       # "embedded", "separate files", "both"
+  naming_convention: ""       # "Fig1.eps", "Figure_1.tiff"
+
+  formats:
+    vector_preferred: []      # ["EPS", "PDF"]
+    raster_acceptable: []     # ["TIFF", "PNG", "JPG"]
+    ms_office_acceptable: true
+    embed_fonts: true
+
+  resolution:
+    line_art_dpi: 1200
+    halftone_dpi: 300
+    combination_dpi: 600
+
+  line_art:
+    definition: ""
+    min_line_width_mm: 0.1
+    min_line_width_pt: 0.3
+    legible_at_final_size: true
+
+  halftone:
+    definition: ""
+    scale_bars_required: false
+
+  combination:
+    definition: ""
+
+  color:
+    online_free: true
+    print_free: true
+    rgb_for_online: true
+    rgb_8bit: true
+    cmyk_for_print: false
+    print_considerations: ""
+    no_color_references_if_bw_print: true
+
+  lettering:
+    font_family: []           # ["Helvetica", "Arial"]
+    font_size_pt_range: [8, 12]
+    consistent_size: true
+    no_effects: true
+    no_titles_in_figure: true
+
+  numbering:
+    style: "arabic"
+    consecutive: true
+    parts: ""                 # "lowercase letters (a, b, c)"
+    appendix_figures: ""      # "continue main numbering" or "A1, A2"
+    supplementary_figures: "" # "numbered separately"
+
+  captions:
+    location: ""              # "in text file", "separate list"
+    format: ""                # "Fig. in bold, number in bold"
+    identify_elements: true
+    cite_previously_published: true
+
+  placement:
+    in_body: true
+    large_files_separate: true
+
+  dimensions:
+    single_column_mm: null
+    double_column_mm: null
+    full_page_mm: null
+    max_height_mm: null
+
+  accessibility:
+    descriptive_captions: true
+    patterns_for_colorblind: true
+    contrast_ratio_min: 4.5
+
+  permissions:
+    required_for_reuse: true
+    print_and_online: true
+    copyright_statement: ""
+
+  generative_ai:
+    policy_url: ""
+    disclosure_required: true
+
+# --- SECTION 12: SUPPLEMENTARY INFORMATION ---
+supplementary_information:
+  accepted: true
+  terminology: ""             # "Supplementary Information", "Online Resource", "Appendix"
+
+  file_formats:
+    documents: []             # [".pdf"]
+    spreadsheets: []          # [".csv", ".xlsx"]
+    presentations: []         # [".pdf"]
+    video: []                 # ["avi", "mp4", "mov"]
+    audio: []                 # ["mp3", "wav"]
+    specialized: []           # [".pdb", ".wrl", ".nb"]
+
+  video_specs:
+    max_file_size_gb: 2
+    min_duration_sec: 1
+    aspect_ratios: []         # ["16:9", "4:3"]
+    formats: []
+
+  multiple_files:
+    zip_allowed: true
+    gz_allowed: true
+
+  numbering:
+    format: ""                # "Online Resource 1", "ESM_1"
+    citation: ""              # "as shown in (Online Resource 3)"
+
+  captions:
+    required: true
+    concise: true
+
+  processing:
+    published_as_received: true
+    no_conversion: true
+    no_editing: true
+
+  accessibility:
+    descriptive_captions: true
+    no_flashing_3_per_second: true
+
+# --- SECTION 13: ETHICAL RESPONSIBILITIES ---
+ethical_responsibilities:
+  cope_member: true           # Committee on Publication Ethics
+
+  research_integrity:
+    no_simultaneous_submission: true
+    original_work: true
+    no_salami_slicing: true
+    concurrent_publication_conditions: ""
+    no_fabrication: true
+    no_falsification: true
+    no_inappropriate_manipulation: true
+    no_plagiarism: true
+    plagiarism_screening: true
+
+  permissions:
+    required_for_reused_content: true
+    print_and_online: true
+    software_permissions: true
+    questionnaire_permissions: true
+
+  self_citation:
+    excessive_discouraged: true
+    coordinated_self_citation_discouraged: true
+
+  dual_use_research:
+    disclosure_required: true
+    examples: []
+
+  corrections:
+    author_obligation: true
+    contact_journal: true
+    erratum_hyperlinked: true
+    retraction_watermarked: true
+
+# --- SECTION 14: AUTHORSHIP ---
+authorship:
+  criteria: ""                # "ICMJE", "COPE"
+  requirements:
+    substantial_contribution: true
+    drafting_or_revision: true
+    final_approval: true
+    accountability: true
+
+  all_authors_consent:
+    submission: true
+    content: true
+    institute_approval: true
+
+  changes_after_submission:
+    adding_authors: ""        # "generally not permitted"
+    deleting_authors: ""
+    reordering: ""
+    requires_explanation: true
+    editor_discretion: true
+
+  corresponding_author:
+    responsibilities: []
+
+  orcid:
+    required: false
+    encouraged: true
+
+  deceased_authors:
+    approval_from_representative: true
+    direct_relative: true
+    policy: ""
+
+  confidentiality:
+    communication_with_journal: true
+
+# --- SECTION 15: REVIEWER SUGGESTIONS ---
+reviewer_suggestions:
+  allowed: true
+  exclusions_allowed: true
+  requirements:
+    independent: true
+    not_connected_to_work: true
+    mix_of_countries: true
+    mix_of_institutions: true
+    institutional_email: true
+    alternative_verification: ""  # "homepage, publication record, researcher ID"
+
+# --- SECTION 16: RESEARCH DATA POLICY ---
+data_policy:
+  type: ""                    # "Type 1", "Type 2", "Type 3", "Type 4"
+  description: ""
+
+  repository:
+    encouraged: true
+    required: false
+    suggested_repositories: []  # ["figshare", "Dryad", "Zenodo"]
+    domain_specific: []
+
+  data_citation:
+    format: ""                # "DataCite minimum: authors, title, publisher, identifier"
+    in_reference_list: true
+    doi_assignment: true
+
+  data_availability_statement:
+    required: true
+    template_options: []
+
+  code_availability:
+    required: false
+    encouraged: true
+
+  blinding:
+    mask_authorship_if_double_blind: true
+    repositories_can_assist: true
+
+# --- SECTION 17: AFTER ACCEPTANCE ---
+after_acceptance:
+  typesetting: true
+  affiliation_confirmation: true
+  publishing_model_choice: true
+  rights_arrangement: true
+
+  copyright:
+    type: ""                  # "transfer", "license"
+    open_access_license: ""   # "CC BY 4.0"
+
+  proofs:
+    author_review: true
+    check_for_typesetting_errors: true
+    no_substantial_changes: true
+    editor_approval_required: true
+    post_publication: ""      # "erratum only"
+
+  offprints:
+    available: true
+    corresponding_author_orders: true
+    ordering_process: ""
+
+  color:
+    online_free: true
+    print_free: true
+
+  publication_fee:
+    amount: null
+    currency: "USD"
+    waiver_available: false
+
+# --- SECTION 18: OPEN ACCESS ---
+open_access:
+  available: true
+  name: ""                    # "Open Choice", "Gold OA"
+  type: ""                    # "gold", "hybrid", "green"
+
+  apc:
+    amount: null
+    currency: "USD"
+    waivers_available: true
+    waiver_policy: ""
+
+  licenses:
+    default: ""               # "CC BY 4.0"
+    options: []               # ["CC BY", "CC BY-NC", "CC BY-NC-ND"]
+
+  embargo_period: null        # months for green OA
+
+  benefits: []
+
+  copyright:
+    retained_by_author: true
+    creative_commons: true
+
+  funder_compliance:
+    note: ""
+
+# --- SECTION 19: PAPER TYPES ---
+paper_types:
+  research_article:
+    word_limit: null
+    abstract_words: null
+    keywords: null
+    sections: []
+    exhibit_limit: null
+
+  review_article:
+    word_limit: null
+    abstract_words: null
+    by_invitation: false
+
+  short_communication:
+    word_limit: null
+    exhibit_limit: null
+    abstract_words: null
+
+  letter:
+    word_limit: null
+
+  commentary:
+    word_limit: null
+    by_invitation: false
+
+  case_report:
+    word_limit: null
+
+  data_paper:
+    word_limit: null
+
+  methods_paper:
+    word_limit: null
+
+# --- SECTION 20: MANUSCRIPT FIT (PROJECT-SPECIFIC) ---
+# Customize this section for your specific manuscript
+fit_assessment:
+  primary_topic: ""
+  secondary_topics: []
+  novel_contribution: ""
+  strengths: []
+  potential_concerns: []
+  competing_journals: []
+
+# --- SECTION 21: QUARTO RENDERING PROFILE ---
+# Settings for the corresponding _quarto-[abbrev].yml file
+quarto_profile:
+  csl: ""                     # CSL file path
+  linestretch: 2.0
+  fontsize: "12pt"
+  documentclass: "article"
+  geometry:
+    - "margin=1in"

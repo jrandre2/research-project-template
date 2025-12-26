@@ -8,7 +8,7 @@ project:
 profile:
   default: default
   group:
-    - [default, jeem, aer]
+    - [default, jeem, aer, nhaz]
 
 book:
   title: "[Your Paper Title]"
