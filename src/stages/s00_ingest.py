@@ -48,6 +48,7 @@ from utils.validation import (
     unique_values,
     row_count,
 )
+from stages._qa_utils import qa_for_stage
 
 
 # ============================================================
@@ -357,6 +358,9 @@ def main(
         print("\n  Columns:")
         for col in df.columns:
             print(f"    - {col}: {df[col].dtype}")
+
+    # Generate QA report
+    qa_for_stage('s00_ingest', df, output_file=str(output_path))
 
     print("\n" + "=" * 60)
     print("Stage 00 complete.")

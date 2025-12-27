@@ -43,6 +43,7 @@ from utils.helpers import (
     ensure_dir,
     add_significance_stars,
 )
+from stages._qa_utils import generate_qa_report, QAMetrics
 
 
 # ============================================================
@@ -420,6 +421,15 @@ def main(
         for r in all_results:
             stars = add_significance_stars(r.p_value)
             print(f"  {r.test_name:<25} {r.coefficient:>10.4f} {r.std_error:>10.4f} {r.p_value:>10.4f}{stars}")
+
+    # Generate QA report
+    metrics = QAMetrics()
+    metrics.add('n_tests', len(all_results))
+    if all_results:
+        significant = sum(1 for r in all_results if r.p_value < 0.05)
+        metrics.add('n_significant_05', significant)
+        metrics.add_pct('significant', (significant / len(all_results)) * 100 if all_results else 0)
+    generate_qa_report('s04_robustness', metrics)
 
     print("\n" + "=" * 60)
     print("Stage 04 complete.")

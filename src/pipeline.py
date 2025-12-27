@@ -31,10 +31,13 @@ validate_submission : Validate against journal requirements
 
 # Review Management
 review_status : Show current review cycle status
+    Options: --manuscript
 review_new : Initialize new review cycle
-    Options: --discipline
+    Options: --manuscript, --focus (or deprecated --discipline)
 review_archive : Archive current cycle and reset
-review_verify : Run verification checklist
+    Options: --manuscript
+review_verify : Run verification checklist with compliance checks
+    Options: --manuscript
 review_report : Generate summary of all review cycles
 
 # Journal Configuration
@@ -59,6 +62,12 @@ plan_migration : Generate migration plan
     Options: --path, --target, --output
 migrate_project : Execute migration (interactive)
     Options: --path, --target, --dry-run
+
+# Stage Versioning
+run_stage : Run a specific stage by name (supports versioned stages)
+    Options: <stage_name>
+list_stages : List available stage versions
+    Options: --prefix
 
 Usage
 -----
@@ -131,18 +140,45 @@ def parse_args() -> argparse.Namespace:
     )
 
     # Review Management Commands
-    sub.add_parser('review_status', help='Show current review cycle status')
+    p_status = sub.add_parser('review_status', help='Show current review cycle status')
+    p_status.add_argument(
+        '--manuscript', '-m',
+        default='main',
+        help='Manuscript to check (default: main)'
+    )
 
     p_new = sub.add_parser('review_new', help='Initialize new review cycle')
     p_new.add_argument(
-        '--discipline', '-d',
+        '--manuscript', '-m',
+        default='main',
+        help='Manuscript for review (default: main)'
+    )
+    p_new.add_argument(
+        '--focus', '-f',
         default='general',
-        choices=['economics', 'engineering', 'social_sciences', 'general'],
-        help='Discipline for review prompts (default: general)'
+        choices=['economics', 'engineering', 'social_sciences', 'general', 'methods', 'policy', 'clarity'],
+        help='Focus area for review prompts (default: general)'
+    )
+    p_new.add_argument(
+        '--discipline', '-d',
+        dest='focus',
+        help='(Deprecated, use --focus) Discipline for review prompts'
     )
 
-    sub.add_parser('review_archive', help='Archive current cycle and reset')
-    sub.add_parser('review_verify', help='Run verification checklist')
+    p_archive = sub.add_parser('review_archive', help='Archive current cycle and reset')
+    p_archive.add_argument(
+        '--manuscript', '-m',
+        default='main',
+        help='Manuscript to archive (default: main)'
+    )
+
+    p_verify = sub.add_parser('review_verify', help='Run verification checklist')
+    p_verify.add_argument(
+        '--manuscript', '-m',
+        default='main',
+        help='Manuscript to verify (default: main)'
+    )
+
     sub.add_parser('review_report', help='Generate summary of all review cycles')
 
     # Journal Configuration Commands
@@ -168,10 +204,14 @@ def parse_args() -> argparse.Namespace:
     )
 
     p_jparse = sub.add_parser('journal_parse', help='Parse guidelines into config')
-    p_jparse.add_argument(
+    p_jparse_source = p_jparse.add_mutually_exclusive_group(required=True)
+    p_jparse_source.add_argument(
         '--input', '-i',
-        required=True,
         help='Input file with raw guidelines'
+    )
+    p_jparse_source.add_argument(
+        '--url', '-u',
+        help='URL to journal author guidelines'
     )
     p_jparse.add_argument(
         '--output', '-o',
@@ -182,6 +222,58 @@ def parse_args() -> argparse.Namespace:
         '--journal', '-j',
         default=None,
         help='Journal name (optional)'
+    )
+    p_jparse.add_argument(
+        '--template', '-t',
+        default='template_comprehensive',
+        help='Template name without .yml (default: template_comprehensive)'
+    )
+    p_jparse.add_argument(
+        '--save-raw',
+        action='store_true',
+        help='Save fetched guidelines to doc/journal_guidelines/'
+    )
+    p_jparse.add_argument(
+        '--raw-dir',
+        default=None,
+        help='Directory to save fetched guidelines'
+    )
+    p_jparse.add_argument(
+        '--overwrite',
+        action='store_true',
+        help='Overwrite existing files'
+    )
+
+    p_jfetch = sub.add_parser('journal_fetch', help='Fetch journal guidelines')
+    p_jfetch.add_argument(
+        '--url', '-u',
+        required=True,
+        help='URL to journal author guidelines'
+    )
+    p_jfetch.add_argument(
+        '--output', '-o',
+        default=None,
+        help='Output filename (default: slug + extension)'
+    )
+    p_jfetch.add_argument(
+        '--journal', '-j',
+        default=None,
+        help='Journal name for default filename'
+    )
+    p_jfetch.add_argument(
+        '--raw-dir',
+        default=None,
+        help='Directory to save guidelines'
+    )
+    p_jfetch.add_argument(
+        '--overwrite',
+        action='store_true',
+        help='Overwrite existing files'
+    )
+    p_jfetch.add_argument(
+        '--text',
+        action='store_true',
+        help='Also save a text-only version'
     )
 
     # Data Audit Commands
@@ -261,6 +353,20 @@ def parse_args() -> argparse.Namespace:
         help='Show what would be done without making changes'
     )
 
+    # Stage Versioning Commands
+    p_run_stage = sub.add_parser('run_stage', help='Run a specific stage by name')
+    p_run_stage.add_argument(
+        'stage_name',
+        help='Stage name (e.g., s00_ingest, s00b_standardize)'
+    )
+
+    p_list_stages = sub.add_parser('list_stages', help='List available stage versions')
+    p_list_stages.add_argument(
+        '--prefix', '-p',
+        default=None,
+        help='Filter by stage prefix (e.g., s00, s01)'
+    )
+
     return p.parse_args()
 
 
@@ -306,19 +412,19 @@ def main():
     # Review Management Commands
     elif args.cmd == 'review_status':
         from stages import s07_reviews
-        s07_reviews.status()
+        s07_reviews.status(manuscript=args.manuscript)
 
     elif args.cmd == 'review_new':
         from stages import s07_reviews
-        s07_reviews.new_cycle(discipline=args.discipline)
+        s07_reviews.new_cycle(manuscript=args.manuscript, focus=args.focus)
 
     elif args.cmd == 'review_archive':
         from stages import s07_reviews
-        s07_reviews.archive()
+        s07_reviews.archive(manuscript=args.manuscript)
 
     elif args.cmd == 'review_verify':
         from stages import s07_reviews
-        s07_reviews.verify()
+        s07_reviews.verify(manuscript=args.manuscript)
 
     elif args.cmd == 'review_report':
         from stages import s07_reviews
@@ -342,7 +448,23 @@ def main():
         s08_journal_parser.parse_guidelines(
             input_file=args.input,
             output_file=args.output,
-            journal_name=args.journal
+            journal_name=args.journal,
+            url=args.url,
+            template_name=args.template,
+            save_raw=args.save_raw,
+            raw_dir=args.raw_dir,
+            overwrite=args.overwrite
+        )
+
+    elif args.cmd == 'journal_fetch':
+        from stages import s08_journal_parser
+        s08_journal_parser.fetch_guidelines_cli(
+            url=args.url,
+            output=args.output,
+            journal_name=args.journal,
+            raw_dir=args.raw_dir,
+            overwrite=args.overwrite,
+            save_text=args.text
         )
 
     # Data Audit Commands
@@ -459,6 +581,131 @@ def main():
         if not args.dry_run and target_path.exists():
             report_path.write_text(report.to_markdown())
             print(f"\nReport saved to: {report_path}")
+
+    # Stage Versioning Commands
+    elif args.cmd == 'run_stage':
+        run_stage_by_name(args.stage_name)
+
+    elif args.cmd == 'list_stages':
+        list_available_stages(args.prefix)
+
+
+def discover_stages(prefix: str = None) -> list[tuple[str, str]]:
+    """
+    Discover available stage modules.
+
+    Parameters
+    ----------
+    prefix : str, optional
+        Filter by stage prefix (e.g., 's00', 's01')
+
+    Returns
+    -------
+    list[tuple[str, str]]
+        List of (stage_name, description) tuples
+    """
+    from pathlib import Path
+
+    stages_dir = Path(__file__).parent / 'stages'
+    stages = []
+
+    for f in sorted(stages_dir.glob('s*.py')):
+        if f.name.startswith('_'):
+            continue
+
+        name = f.stem
+        if prefix and not name.startswith(prefix):
+            continue
+
+        # Try to extract description from docstring
+        try:
+            content = f.read_text()
+            # Look for Purpose: line in docstring
+            import re
+            match = re.search(r'Purpose:\s*(.+?)(?:\n|$)', content)
+            desc = match.group(1).strip() if match else ''
+        except Exception:
+            desc = ''
+
+        stages.append((name, desc))
+
+    return stages
+
+
+def list_available_stages(prefix: str = None) -> None:
+    """List available stage modules."""
+    print("Available Pipeline Stages")
+    print("=" * 60)
+
+    stages = discover_stages(prefix)
+
+    if not stages:
+        if prefix:
+            print(f"No stages found with prefix '{prefix}'")
+        else:
+            print("No stages found")
+        return
+
+    # Group by stage number
+    current_num = None
+    for name, desc in stages:
+        # Extract stage number (e.g., '00' from 's00_ingest' or 's00b_standardize')
+        import re
+        match = re.match(r's(\d+)', name)
+        num = match.group(1) if match else '??'
+
+        if num != current_num:
+            if current_num is not None:
+                print()
+            current_num = num
+
+        print(f"  {name:<30} {desc}")
+
+    print()
+    print(f"Total: {len(stages)} stage(s)")
+    print()
+    print("Run a stage with: python src/pipeline.py run_stage <stage_name>")
+
+
+def run_stage_by_name(stage_name: str) -> None:
+    """
+    Run a stage by its module name.
+
+    Parameters
+    ----------
+    stage_name : str
+        Stage module name (e.g., 's00_ingest', 's00b_standardize')
+    """
+    from pathlib import Path
+    import importlib
+
+    stages_dir = Path(__file__).parent / 'stages'
+    stage_file = stages_dir / f'{stage_name}.py'
+
+    if not stage_file.exists():
+        print(f"ERROR: Stage '{stage_name}' not found")
+        print(f"  Expected file: {stage_file}")
+        print()
+        print("Available stages:")
+        for name, _ in discover_stages():
+            print(f"  - {name}")
+        return
+
+    # Import and run the stage
+    try:
+        module = importlib.import_module(f'stages.{stage_name}')
+
+        # Look for main() or a similarly named entry point
+        if hasattr(module, 'main'):
+            module.main()
+        elif hasattr(module, 'validate'):
+            # s06_manuscript uses validate()
+            module.validate()
+        else:
+            print(f"ERROR: Stage '{stage_name}' has no main() or validate() function")
+    except Exception as e:
+        print(f"ERROR running stage '{stage_name}': {e}")
+        raise
 
 
 if __name__ == '__main__':

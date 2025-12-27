@@ -224,6 +224,7 @@ COMMANDS = {
     'journal_list': 's08_journal_parser.list_configs()',
     'journal_validate': 's08_journal_parser.validate_config()',
     'journal_compare': 's08_journal_parser.compare_manuscript()',
+    'journal_fetch': 's08_journal_parser.fetch_guidelines_cli()',
     'journal_parse': 's08_journal_parser.parse_guidelines()',
     'audit_data': 'data_audit.main()',
 }

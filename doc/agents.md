@@ -1,8 +1,12 @@
 # Agent Guidelines
 
-Guidance for AI agents working on this project.
-
 **Related**: [AGENT_TOOLS.md](AGENT_TOOLS.md) | [skills.md](skills.md)
+**Status**: Active
+**Last Updated**: 2025-12-27
+
+---
+
+Guidance for AI agents working on this project.
 
 ## Project Structure
 
@@ -114,4 +118,4 @@ Only remove locks if no git operation is in progress.
 
 - `data_raw/` - Raw data (never modify)
 - `data_work/*.parquet` - Generated data (re-run pipeline instead)
-- `manuscript_quarto/apa.csl` - Standard citation style
+- `manuscript_quarto/csl/apa.csl` - Standard citation style

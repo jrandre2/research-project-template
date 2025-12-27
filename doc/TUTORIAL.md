@@ -235,8 +235,8 @@ Checks performed:
 - Word count limits
 - Abstract length
 - Required sections
-- Figure formats
-- Reference completeness
+- Figure formats (when configured)
+- Bibliography/citation presence
 
 Output: `data_work/diagnostics/submission_validation.md`
 

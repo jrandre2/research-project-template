@@ -1,5 +1,11 @@
 # Skills Reference
 
+**Related**: [SYNTHETIC_REVIEW_PROCESS.md](SYNTHETIC_REVIEW_PROCESS.md) | [PIPELINE.md](PIPELINE.md)
+**Status**: Active
+**Last Updated**: 2025-12-27
+
+---
+
 Available skills and actions for research project management.
 
 ## Pipeline Skills
@@ -95,26 +101,29 @@ Check current review cycle status.
 
 ```bash
 python src/pipeline.py review_status
+python src/pipeline.py review_status -m main    # specific manuscript
 ```
 
 Shows summary statistics, pending items, and verification progress.
 
 ### /review-new
 
-Start a new review cycle with a discipline-specific prompt.
+Start a new review cycle with a focus-specific prompt.
 
 ```bash
-python src/pipeline.py review_new --discipline economics
-python src/pipeline.py review_new --discipline engineering
-python src/pipeline.py review_new --discipline social_sciences
-python src/pipeline.py review_new --discipline general
+python src/pipeline.py review_new --focus economics
+python src/pipeline.py review_new -f engineering
+python src/pipeline.py review_new -m main -f methods    # with manuscript
 ```
 
-**Disciplines:**
+**Focus Options:**
 - `economics` - Identification, causal inference, econometrics
 - `engineering` - Reproducibility, benchmarks, validation
 - `social_sciences` - Theory, generalizability, ethics
 - `general` - Structure, clarity, contribution
+- `methods` - Statistical rigor, methodology critique
+- `policy` - Practitioner perspective, actionability
+- `clarity` - Writing quality, accessibility
 
 ### /review-archive
 
@@ -122,6 +131,7 @@ Archive completed review cycle and reset for new one.
 
 ```bash
 python src/pipeline.py review_archive
+python src/pipeline.py review_archive -m main    # specific manuscript
 ```
 
 Moves current tracker to `doc/reviews/archive/` and clears for next cycle.
@@ -132,6 +142,7 @@ Run verification checklist for current cycle.
 
 ```bash
 python src/pipeline.py review_verify
+python src/pipeline.py review_verify -m main    # specific manuscript
 ```
 
 Shows completed vs. pending verification items.
@@ -149,6 +160,14 @@ Lists all archived and active reviews with statistics.
 ---
 
 ## Manuscript Skills
+
+### /manuscript-guardrails
+
+Behavior rules for manuscript edits. Apply when editing any `manuscript_quarto/**/*.qmd` (including appendices and variants).
+
+- Manuscript must be standalone; do not reference internal prior work, drafts, or memos.
+- Metacommentary is prohibited; present findings directly (avoid "in this paper", "the next section").
+- External literature is appropriate; cite published research normally.
 
 ### /render
 
@@ -259,19 +278,49 @@ Parse raw journal guidelines into structured YAML configuration.
 ```bash
 python src/pipeline.py journal_parse --input guidelines.txt --output new_journal.yml
 python src/pipeline.py journal_parse -i guidelines.txt -o nature.yml --journal "Nature"
+python src/pipeline.py journal_parse --url https://example.com/guidelines --output journal.yml --save-raw
 ```
 
 **Options:**
-- `--input, -i`: Input file with raw guidelines text (required)
+- `--input, -i`: Input file with raw guidelines text
+- `--url, -u`: URL to author guidelines (required if no input file)
 - `--output, -o`: Output config filename (default: new_journal.yml)
 - `--journal, -j`: Journal name (optional)
+- `--template, -t`: Template name (default: template_comprehensive)
+- `--save-raw`: Save fetched guidelines to `doc/journal_guidelines/`
+- `--raw-dir`: Directory to save fetched guidelines
+- `--overwrite`: Overwrite existing files
+
+**Notes:**
+- PDF guidelines must be converted to text or HTML before parsing.
+- Parsing is heuristic; review the generated YAML for completeness.
+- Downloads default to `doc/journal_guidelines/` when no output directory is provided.
 
 **Workflow:**
-1. Copy journal author guidelines to a text file
+1. Copy journal author guidelines to a text file, or use `journal_fetch`/`--url`
 2. Run parser to create initial config
 3. Review and fill in missing fields
 4. Create Quarto profile if needed (`_quarto-{abbrev}.yml`)
 5. Validate with `journal_validate`
+
+### /journal-fetch
+
+Download journal guidelines from a URL.
+
+```bash
+python src/pipeline.py journal_fetch --url https://example.com/guidelines --journal "Journal Name" --text
+```
+
+**Options:**
+- `--url, -u`: URL to author guidelines (required)
+- `--output, -o`: Output filename (default: slug + extension)
+- `--journal, -j`: Journal name for default filename
+- `--raw-dir`: Directory to save guidelines
+- `--overwrite`: Overwrite existing files
+- `--text`: Also save a text-only version
+
+**Notes:**
+- PDF guidelines must be converted to text or HTML before parsing.
 
 ---
 
@@ -421,11 +470,14 @@ python src/pipeline.py map_project --path /path/to/project --output mapping.json
 - `--output, -o`: Save JSON mapping to file (optional)
 
 **Mapping categories:**
-- Data files → `data_raw/`
-- Output files → `manuscript_quarto/figures/` (primary)
-- Documentation → `doc/`
-- Tests → `tests/`
-- Python modules → `src/stages/s00-s07.py` (based on content keywords)
+- Data files (`data/`) -> `data_raw/`
+- Output files (`output/`, `outputs/`, `figures/`) -> `manuscript_quarto/figures/` (primary)
+- Documentation (`docs/`) -> `doc/`
+- Tests (`tests/`) -> `tests/`
+- Python modules -> `src/stages/s00-s06.py` (based on content keywords)
+- Utility modules with `util` or `helper` in the path -> `src/utils/`
+
+Note: `doc/` and `test/` are detected but not copied by the mapper; rename to `docs/` and `tests/` or copy manually.
 
 ### /plan-migration
 

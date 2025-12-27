@@ -18,13 +18,13 @@ Licensing: code is PolyForm Noncommercial 1.0.0 and documentation/manuscript con
 - Modular data and analysis pipeline (ingest, link, panel, estimate, robustness, figures)
 - Quarto manuscript with journal profiles and validation checks
 - Synthetic peer review workflow and tracking
-- Journal configuration parsing and comparison tools
+- Journal configuration parsing and comparison tools (heuristic parsing + URL fetch)
 - Project migration tools for onboarding legacy codebases
 - Data audit utilities for sample attrition and diagnostics
 
 ## Workflow Notes
 
-Journal configuration is optional. If you have not set a journal config yet, skip `validate_submission` and render with Quarto only. When a journal config is available, `validate_submission` enforces word counts, section requirements, and formatting rules.
+Journal configuration is optional. If you have not set a journal config yet, skip `validate_submission` and render with Quarto only. When a journal config is available, `validate_submission` checks word count (when configured), abstract length, required sections, figure formats, and bibliography/citation presence.
 
 Review/versioning is handled through `review_new`, `review_verify`, and `review_archive`, with `manuscript_quarto/REVISION_TRACKER.md` and `doc/reviews/archive/` preserving review cycles and responses.
 
@@ -142,7 +142,7 @@ See `demo/README.md` for a small sample dataset and expected outputs that exerci
 ### Review Management
 
 - `python src/pipeline.py review_status`
-- `python src/pipeline.py review_new --discipline economics`
+- `python src/pipeline.py review_new --focus economics`
 - `python src/pipeline.py review_verify`
 - `python src/pipeline.py review_archive`
 - `python src/pipeline.py review_report`
@@ -153,6 +153,12 @@ See `demo/README.md` for a small sample dataset and expected outputs that exerci
 - `python src/pipeline.py journal_validate --config natural_hazards`
 - `python src/pipeline.py journal_compare --journal natural_hazards`
 - `python src/pipeline.py journal_parse --input guidelines.txt --output new_journal.yml`
+- `python src/pipeline.py journal_parse --url https://example.com/guidelines --journal "Journal Name" --output journal.yml --save-raw`
+- `python src/pipeline.py journal_fetch --url https://example.com/guidelines --journal "Journal Name" --text`
+
+Note: PDF guidelines must be converted to text or HTML before parsing.
+Default download location is `doc/journal_guidelines/` (when using `journal_fetch` or `journal_parse --save-raw`).
+Parsing is heuristic; review the generated YAML for completeness.
 
 ### Data Audit
 

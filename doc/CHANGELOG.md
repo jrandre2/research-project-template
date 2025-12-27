@@ -4,6 +4,29 @@ All notable changes to this project are documented in this file.
 
 ---
 
+## [2025-12-26] - Journal Guidelines Tooling and Docs Sync
+
+- Added guideline fetch + heuristic parsing for journal configs
+- Documented parsing limitations, outputs, and defaults
+- Clarified manuscript validation checks in docs
+- Added tests for journal parsing helpers and CLI args
+- Added manuscript guardrails skill for agent edits
+
+### Files Modified
+- src/stages/s08_journal_parser.py
+- src/pipeline.py
+- tests/test_pipeline.py
+- tests/test_journal_parser.py
+- README.md
+- doc/PIPELINE.md
+- doc/README.md
+- doc/skills.md
+- doc/ARCHITECTURE.md
+- doc/TUTORIAL.md
+- doc/RISBS_PROJECT_DESCRIPTION.md
+
+---
+
 ## [2025-12-26] - Manuscript Variants and Provenance
 
 - Added variant snapshots with provenance manifests and comparison reports

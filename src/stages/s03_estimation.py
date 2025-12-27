@@ -47,6 +47,7 @@ from utils.helpers import (
     format_pvalue,
     add_significance_stars,
 )
+from stages._qa_utils import generate_qa_report, QAMetrics
 
 
 # ============================================================
@@ -511,6 +512,16 @@ def main(
         print("  " + "-" * 50)
         for r in results:
             print(f"  {r.specification:<20} {r.coefficient:>10.4f} {r.std_error:>10.4f} {r.p_value:>10.4f}")
+
+    # Generate QA report
+    metrics = QAMetrics()
+    metrics.add('n_specifications', len(results))
+    metrics.add('sample', sample)
+    if results:
+        metrics.add('n_obs', results[0].n_obs)
+        significant = sum(1 for r in results if r.p_value < 0.05)
+        metrics.add('n_significant_05', significant)
+    generate_qa_report('s03_estimation', metrics)
 
     print("\n" + "=" * 60)
     print("Stage 03 complete.")

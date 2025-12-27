@@ -8,61 +8,73 @@
 source .venv/bin/activate  # REQUIRED for all scripts
 ```
 
+**Full documentation:** See `doc/README.md` for complete index.
+
 ### Common Commands
 
 ```bash
-# Run pipeline stages
+# Pipeline stages
 python src/pipeline.py ingest_data
 python src/pipeline.py run_estimation --specification baseline
 python src/pipeline.py make_figures
 
+# Stage versioning
+python src/pipeline.py list_stages                # List all stages
+python src/pipeline.py run_stage s00_ingest       # Run specific stage
+
 # Render manuscript
 cd manuscript_quarto && ./render_all.sh
-cd manuscript_quarto && ./render_all.sh --profile jeem  # Journal-specific
 
-# Synthetic review management
-python src/pipeline.py review_status              # Check status
-python src/pipeline.py review_new -d economics    # Start new review
-python src/pipeline.py review_verify              # Run verification
-python src/pipeline.py review_archive             # Archive completed
-
-# Project migration tools
-python src/pipeline.py analyze_project --path /path/to/project
-python src/pipeline.py map_project --path /path/to/project
-python src/pipeline.py plan_migration --path /source --target /target
-python src/pipeline.py migrate_project --path /source --target /target --dry-run
+# Synthetic review (multi-manuscript support)
+python src/pipeline.py review_new -f methods              # Start review
+python src/pipeline.py review_new -m main -f economics    # Specify manuscript
+python src/pipeline.py review_verify                      # Run verification
 ```
 
-## Key Concepts
+## Configuration Module
 
-### AI-Powered Project Migration
+Central configuration in `src/config.py`:
 
-This software provides tools for analyzing and migrating existing research projects to the standardized platform structure.
+```python
+from config import (
+    PROJECT_ROOT, DATA_WORK_DIR, DATA_RAW_DIR,  # Paths
+    ENABLE_QA_REPORTS, QA_REPORTS_DIR,           # QA settings
+    SIGNIFICANCE_LEVEL, BOOTSTRAP_ITERATIONS,   # Methodological params
+    MANUSCRIPTS, DEFAULT_MANUSCRIPT,             # Multi-manuscript
+)
+```
 
-1. **Project Analyzer** - Scans project directories, extracts Python module metadata (imports, functions, classes, docstrings)
-2. **Structure Mapper** - Maps source modules to platform stages (s00-s07) based on content keywords
-3. **Migration Planner** - Generates actionable migration plans with setup, copy, transform, generate, and verify steps
-4. **Migration Executor** - Executes plans with dry-run support, creates scaffold files for manual code merge
+## Versioned Stage Pattern
 
-### Platform Stage Pattern
+Stages can evolve with version suffixes: `s00_ingest` → `s00b_standardize` → `s00c_enhanced`
 
-| Stage | Purpose | Keywords |
-|-------|---------|----------|
-| `s00_ingest.py` | Data ingestion | load, ingest, read |
-| `s01_link.py` | Record linkage | link, merge, join |
-| `s02_panel.py` | Panel construction | panel, construct, balance |
-| `s03_estimation.py` | Main estimation | model, estim, regress |
-| `s04_robustness.py` | Robustness checks | robust, sensitiv, placebo |
-| `s05_figures.py` | Figure generation | figure, plot, viz |
-| `s06_manuscript.py` | Manuscript validation | manuscript, valid, check |
-| `s07_reviews.py` | Review management | review, cycle |
+```bash
+python src/pipeline.py list_stages -p s00    # List all s00 versions
+python src/pipeline.py run_stage s00b_standardize  # Run specific version
+```
 
-### Data Conventions
+## QA Reports
 
-- **Source projects**: Analyzed from any directory structure
-- **Target projects**: Follow `src/stages/sXX_name.py` naming pattern
-- **Data files**: Raw data in `data_raw/`, working data in `data_work/`
-- **Outputs**: Figures in `figures/`, diagnostics in `data_work/diagnostics/`
+Each stage generates quality reports in `data_work/quality/`:
+
+```text
+data_work/quality/s00_ingest_quality_20251227_143022.csv
+```
+
+Controlled by `ENABLE_QA_REPORTS` in `src/config.py`.
+
+## Extended Scripts Directory
+
+Exploratory analyses separate from core pipeline in `scripts/`:
+
+```text
+scripts/
+├── README.md              # Documentation
+├── run_example.py         # Template script
+└── run_<analysis_name>.py # Custom analyses
+```
+
+Use scripts for one-off analyses that shouldn't be part of the reproducible pipeline.
 
 ## Critical Constraints
 
@@ -77,47 +89,8 @@ This software provides tools for analyzing and migrating existing research proje
 - Activate `.venv` before running scripts
 - Run diagnostics after estimation changes
 - Re-render Quarto after modifying `.qmd` files
-- Review `MIGRATION_REPORT.md` after executing migrations
 
-## Data Files
-
-| File | Purpose |
-|------|---------|
-| `data_work/panel.parquet` | Main analysis panel |
-| `data_work/diagnostics/*.csv` | Estimation diagnostics |
-
-## Agent Modules
-
-| Module | Purpose |
-|--------|---------|
-| `src/agents/project_analyzer.py` | Scan and analyze project structures |
-| `src/agents/structure_mapper.py` | Map modules to platform stages |
-| `src/agents/migration_planner.py` | Generate migration plans |
-| `src/agents/migration_executor.py` | Execute migrations |
-
-## Manuscript
-
-Location: `manuscript_quarto/`
-
-### Rendering All Formats
-
-**Problem:** Quarto book projects overwrite `_output/` on each render.
-
-**Solution:** Use `render_all.sh`:
-
-```bash
-cd manuscript_quarto
-./render_all.sh                    # All formats (HTML, PDF, DOCX)
-./render_all.sh --profile jeem     # JEEM submission format
-./render_all.sh --profile aer      # AER submission format
-```
-
-Output files in `manuscript_quarto/_output/`:
-- `index.html` (+ appendix HTMLs)
-- `[ProjectName].pdf`
-- `[ProjectName].docx`
-
-### Manuscript Writing Standards
+## Manuscript Writing Standards
 
 **DO NOT include in manuscript prose:**
 
@@ -134,88 +107,37 @@ Output files in `manuscript_quarto/_output/`:
 
 ## Synthetic Peer Review
 
-Use synthetic reviews to stress-test methodology before submission.
-
 ### Workflow
 
-1. **Generate**: `python src/pipeline.py review_new --discipline economics`
+1. **Generate**: `python src/pipeline.py review_new --focus methods`
 2. **Triage**: Classify comments in `manuscript_quarto/REVISION_TRACKER.md`
 3. **Track**: Update checklist as changes are made
-4. **Verify**: `python src/pipeline.py review_verify`
+4. **Verify**: `python src/pipeline.py review_verify` (includes compliance checks)
 5. **Archive**: `python src/pipeline.py review_archive`
 
-### Status Classifications
+### Focus Options
 
-- `VALID - ACTION NEEDED` - Requires changes
-- `ALREADY ADDRESSED` - Already handled
-- `BEYOND SCOPE` - Valid but deferred
-- `INVALID` - Reviewer misunderstanding
+**Discipline-based:** economics, engineering, social_sciences, general
+**Aspect-based:** methods, policy, clarity
 
-### Discipline Templates
+### Multi-Manuscript Support
 
-- `economics` - Identification, causal inference, econometrics
-- `engineering` - Reproducibility, benchmarks, validation
-- `social_sciences` - Theory, generalizability, ethics
-- `general` - Structure, clarity, contribution
+```bash
+python src/pipeline.py review_status -m main     # Check specific manuscript
+python src/pipeline.py review_new -m main -f economics
+```
+
+Configure manuscripts in `src/config.py` via the `MANUSCRIPTS` dictionary.
 
 See `doc/SYNTHETIC_REVIEW_PROCESS.md` for full methodology.
 
-## Project Migration Tools
+## Key References
 
-AI-powered tools for analyzing and migrating external research projects.
-
-### Migration Workflow
-
-```bash
-# 1. Analyze project structure
-python src/pipeline.py analyze_project --path /path/to/project
-
-# 2. See how it maps to the platform structure
-python src/pipeline.py map_project --path /path/to/project
-
-# 3. Generate migration plan
-python src/pipeline.py plan_migration --path /source --target /target --output plan.md
-
-# 4. Test with dry-run
-python src/pipeline.py migrate_project --path /source --target /target --dry-run
-
-# 5. Execute migration
-python src/pipeline.py migrate_project --path /source --target /target
-```
-
-### Migration Step Categories
-
-1. **Setup** - Create directory structure, git init, virtual environment
-2. **Copy** - Transfer data, figures, docs, tests to standard locations
-3. **Transform** - Create scaffold stage files with merge instructions
-4. **Generate** - Create documentation templates (DATA_DICTIONARY.md, etc.)
-5. **Verify** - Check imports, run tests, validate documentation
-
-### Post-Migration Tasks
-
-After migration, review `MIGRATION_REPORT.md` in the target directory:
-- Complete scaffold files by merging source code
-- Fill in documentation templates
-- Run verification steps manually
-
-See `doc/AGENT_TOOLS.md` for complete module reference.
-
-## Documentation
-
-See `doc/README.md` for complete index:
-
-- `doc/PIPELINE.md` - Pipeline stages and commands
-- `doc/METHODOLOGY.md` - Statistical methods
-- `doc/DATA_DICTIONARY.md` - Variable definitions
-- `doc/SYNTHETIC_REVIEW_PROCESS.md` - Review methodology
-- `doc/AGENT_TOOLS.md` - Project migration agent reference
-- `doc/agents.md` - AI agent guidelines
-- `doc/skills.md` - Available skills/actions
-
-## Troubleshooting
-
-**Git hangs:** `rm -f .git/index.lock` (if no git operation running)
-
-**Quarto errors:** Check that `.venv` is activated and all dependencies installed
-
-**OneDrive issues:** See `doc/agents.md`
+| Topic | Document |
+|-------|----------|
+| Pipeline stages | `doc/PIPELINE.md` |
+| Stage pattern and keywords | `doc/PIPELINE.md` |
+| Project migration | `doc/AGENT_TOOLS.md` |
+| Skills and actions | `doc/skills.md` |
+| Statistical methods | `doc/METHODOLOGY.md` |
+| Troubleshooting | `doc/agents.md` |

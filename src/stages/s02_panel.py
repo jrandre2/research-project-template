@@ -51,6 +51,7 @@ from utils.validation import (
     row_count,
     no_duplicate_rows,
 )
+from stages._qa_utils import qa_for_stage
 
 
 # ============================================================
@@ -488,6 +489,9 @@ def main(
         print(f"\n  Columns ({len(df.columns)}):")
         for col in df.columns:
             print(f"    - {col}: {df[col].dtype}")
+
+    # Generate QA report
+    qa_for_stage('s02_panel', df, output_file=str(output_path))
 
     print("\n" + "=" * 60)
     print("Stage 02 complete.")

@@ -49,6 +49,7 @@ from utils.figure_style import (
     save_figure,
     annotate_panel,
 )
+from stages._qa_utils import generate_qa_report, QAMetrics
 
 
 # ============================================================
@@ -439,6 +440,15 @@ def main(
         for path in generated:
             if path:
                 print(f"    - {path.name}")
+
+    # Generate QA report
+    metrics = QAMetrics()
+    metrics.add('n_figures_generated', len(generated))
+    metrics.add('output_dir', str(fig_dir))
+    if generated:
+        total_size = sum(p.stat().st_size for p in generated if p and p.exists())
+        metrics.add('total_size_kb', round(total_size / 1024, 1))
+    generate_qa_report('s05_figures', metrics)
 
     print("\n" + "=" * 60)
     print("Stage 05 complete.")

@@ -46,6 +46,7 @@ from utils.helpers import (
     ensure_dir,
     calculate_match_rate,
 )
+from stages._qa_utils import qa_for_stage
 
 
 # ============================================================
@@ -495,6 +496,9 @@ def main(
         print("\n  Columns:")
         for col in df.columns:
             print(f"    - {col}")
+
+    # Generate QA report
+    qa_for_stage('s01_link', df, output_file=str(output_path))
 
     print("\n" + "=" * 60)
     print("Stage 01 complete.")

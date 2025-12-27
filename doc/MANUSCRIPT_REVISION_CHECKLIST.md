@@ -1,14 +1,14 @@
 # Manuscript Revision Checklist
 
 **Related**: [SYNTHETIC_REVIEW_PROCESS.md](SYNTHETIC_REVIEW_PROCESS.md) | [reviews/README.md](reviews/README.md)
-**Status**: [NO ACTIVE REVIEW | IN PROGRESS | ADDRESSED]
-**Last Updated**: [Date]
+**Status**: Template
+**Last Updated**: 2025-12-26
 
 ---
 
-## Current Status: [Status Description]
+## Current Status: Template
 
-[Brief description of current revision state]
+Template checklist; fill in when a review is active.
 
 ---
 
@@ -104,5 +104,5 @@ See [reviews/README.md](reviews/README.md) for detailed history.
 
 ---
 
-*Last updated: [Date]*
-*Status: [Current status]*
+*Last updated: 2025-12-26*
+*Status: Template*

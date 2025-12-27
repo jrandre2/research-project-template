@@ -113,22 +113,26 @@ print(mapping.summary())
 
 | Source Content | Target Location |
 |----------------|-----------------|
-| `data/`, `raw/` | `data_raw/` |
-| `output/`, `results/` | `manuscript_quarto/figures/` |
-| `docs/`, `documentation/` | `doc/` |
-| `tests/`, `test/` | `tests/` |
+| `data/` | `data_raw/` |
+| `output/`, `outputs/`, `figures/` | `manuscript_quarto/figures/` |
+| `docs/` | `doc/` |
+| `tests/` | `tests/` |
+
+Note: The mapper only copies `docs/` and `tests/`. If your source uses `doc/` or `test/`, rename or copy manually. Directories like `results/` are not mapped by default.
 
 **Python Module Mapping (by keywords):**
 
 | Keywords | Target Stage |
 |----------|--------------|
-| `load`, `ingest`, `read` | `src/stages/s00_ingest.py` |
-| `link`, `merge`, `join` | `src/stages/s01_link.py` |
-| `panel`, `construct`, `balance` | `src/stages/s02_panel.py` |
-| `model`, `estim`, `regress` | `src/stages/s03_estimation.py` |
-| `robust`, `sensitiv`, `placebo` | `src/stages/s04_robustness.py` |
-| `figure`, `plot`, `viz` | `src/stages/s05_figures.py` |
-| `manuscript`, `valid`, `check` | `src/stages/s06_manuscript.py` |
+| `data`, `loader`, `ingest`, `load`, `import` | `src/stages/s00_ingest.py` |
+| `link`, `merge`, `join`, `match` | `src/stages/s01_link.py` |
+| `panel`, `construct`, `build`, `prepare` | `src/stages/s02_panel.py` |
+| `model`, `estim`, `regress`, `fit`, `sem` | `src/stages/s03_estimation.py` |
+| `robust`, `sensitiv`, `check`, `valid` | `src/stages/s04_robustness.py` |
+| `visual`, `plot`, `figure`, `graph`, `chart` | `src/stages/s05_figures.py` |
+| `manuscript`, `report`, `output` | `src/stages/s06_manuscript.py` |
+
+Modules with `util` or `helper` in the path are copied to `src/utils/`.
 
 ---
 

@@ -40,9 +40,9 @@ Completed review cycles are stored in `archive/`:
 
 ## Starting a New Review
 
-1. Generate review using discipline-specific prompt:
+1. Generate review using focus-specific prompt:
    ```bash
-   python src/pipeline.py review_new --discipline economics
+   python src/pipeline.py review_new --focus economics
    ```
 
 2. Triage comments in `REVISION_TRACKER.md`

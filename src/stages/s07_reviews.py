@@ -4,20 +4,23 @@ Stage 07: Review Management
 
 Purpose: Manage synthetic peer review cycles for manuscript development.
 
+Supports multiple manuscripts with independent review tracking and focus-specific
+prompts for comprehensive pre-submission review.
+
 Commands
 --------
 status : Display current review cycle status
-new    : Initialize a new review cycle with discipline-specific template
+new    : Initialize a new review cycle with focus-specific template
 archive: Archive current cycle and reset for new one
-verify : Run verification checklist
+verify : Run verification checklist with journal compliance checks
 report : Generate summary report of all review cycles
 
 Usage
 -----
-    python src/pipeline.py review_status
-    python src/pipeline.py review_new --discipline economics
-    python src/pipeline.py review_archive
-    python src/pipeline.py review_verify
+    python src/pipeline.py review_status --manuscript main
+    python src/pipeline.py review_new --manuscript main --focus economics
+    python src/pipeline.py review_archive --manuscript main
+    python src/pipeline.py review_verify --manuscript main
     python src/pipeline.py review_report
 """
 from __future__ import annotations
@@ -28,18 +31,88 @@ from datetime import datetime
 from pathlib import Path
 from typing import Optional
 
+import sys
+sys.path.insert(0, str(Path(__file__).parent.parent))
+from stages._qa_utils import generate_qa_report, QAMetrics
+
 # Define paths
 PROJECT_ROOT = Path(__file__).parent.parent.parent
 DOC_DIR = PROJECT_ROOT / 'doc'
 REVIEWS_DIR = DOC_DIR / 'reviews'
-ARCHIVE_DIR = REVIEWS_DIR / 'archive'
-MANUSCRIPT_DIR = PROJECT_ROOT / 'manuscript_quarto'
-TRACKER_FILE = MANUSCRIPT_DIR / 'REVISION_TRACKER.md'
 CHECKLIST_FILE = DOC_DIR / 'MANUSCRIPT_REVISION_CHECKLIST.md'
 REVIEWS_INDEX = REVIEWS_DIR / 'README.md'
 
-# Discipline templates
-DISCIPLINE_PROMPTS = {
+
+# =============================================================================
+# MANUSCRIPT CONFIGURATION
+# =============================================================================
+
+MANUSCRIPTS = {
+    'main': {
+        'name': 'Main Manuscript',
+        'title': '[Project Title]',
+        'dir': PROJECT_ROOT / 'manuscript_quarto',
+        'reviews_dir': REVIEWS_DIR / 'main',
+        'archive_dir': REVIEWS_DIR / 'main' / 'archive',
+        'description': 'Primary submission manuscript',
+    },
+    # Additional manuscripts can be configured here
+    # 'short': {
+    #     'name': 'Short Communication',
+    #     'title': '[Short Title]',
+    #     'dir': PROJECT_ROOT / 'manuscript_short',
+    #     'reviews_dir': REVIEWS_DIR / 'short',
+    #     'archive_dir': REVIEWS_DIR / 'short' / 'archive',
+    #     'description': 'Brief communication version',
+    # },
+}
+
+DEFAULT_MANUSCRIPT = 'main'
+
+
+def get_manuscript_paths(manuscript: str = None) -> dict:
+    """
+    Get paths for a specific manuscript.
+
+    Parameters
+    ----------
+    manuscript : str, optional
+        Manuscript name. Defaults to DEFAULT_MANUSCRIPT.
+
+    Returns
+    -------
+    dict
+        Dictionary with manuscript paths and metadata
+
+    Raises
+    ------
+    ValueError
+        If manuscript name is not found
+    """
+    if manuscript is None:
+        manuscript = DEFAULT_MANUSCRIPT
+
+    if manuscript not in MANUSCRIPTS:
+        available = ', '.join(MANUSCRIPTS.keys())
+        raise ValueError(f"Unknown manuscript '{manuscript}'. Available: {available}")
+
+    config = MANUSCRIPTS[manuscript]
+    return {
+        'manuscript_dir': config['dir'],
+        'tracker_file': config['dir'] / 'REVISION_TRACKER.md',
+        'reviews_dir': config['reviews_dir'],
+        'archive_dir': config['archive_dir'],
+        'name': config['name'],
+        'title': config['title'],
+    }
+
+
+# =============================================================================
+# FOCUS PROMPTS (Generic Templates)
+# =============================================================================
+
+FOCUS_PROMPTS = {
+    # Discipline-based prompts (original)
     'economics': '''Act as a critical peer reviewer for a top economics journal (AER, QJE, JEEM, Econometrica).
 
 Review the following manuscript for:
@@ -91,33 +164,137 @@ Review the following manuscript for:
 - **Presentation**: Is the writing clear and accessible?
 
 Be constructive and specific about improvements needed.
-Format your response with numbered major and minor comments.'''
+Format your response with numbered major and minor comments.''',
+
+    # Focus-specific prompts (new)
+    'methods': '''Act as a methodologist reviewing an academic manuscript.
+
+Focus exclusively on the **statistical and methodological approach**:
+
+**1. Model Specification**
+- Is the statistical model appropriate for the research question?
+- Are assumptions tested and satisfied?
+- Is the functional form justified?
+
+**2. Estimation**
+- Are standard errors correctly specified?
+- Is clustering/stratification handled appropriately?
+- Are confidence intervals properly constructed?
+
+**3. Sample & Power**
+- Is the sample size adequate for the analysis?
+- Are effect sizes practically meaningful?
+- Is there evidence of adequate statistical power?
+
+**4. Diagnostics**
+- Are residuals examined?
+- Are influential observations identified?
+- Are model fit statistics reported?
+
+**5. Robustness**
+- Are alternative specifications tested?
+- Are results stable across subsamples?
+- Are sensitivity analyses performed?
+
+Format your response with numbered major and minor methodological concerns.''',
+
+    'policy': '''Act as a practitioner reviewing an academic manuscript for practical relevance.
+
+Evaluate this manuscript for **practical applicability and actionability**:
+
+**1. Practitioner Relevance**
+- Would practitioners find this useful?
+- Are recommendations specific enough to implement?
+- Is the research question important to the field?
+
+**2. Actionable Insights**
+- What specific actions should practitioners take based on findings?
+- Are recommendations feasible given real-world constraints?
+- Are implementation barriers discussed?
+
+**3. Context & Generalization**
+- Do findings apply to the practitioner's context?
+- Are boundary conditions clearly stated?
+- What contexts might require different approaches?
+
+**4. Trade-offs & Limitations**
+- Are costs and benefits honestly assessed?
+- Are unintended consequences considered?
+- Are limitations clearly communicated?
+
+**5. Communication**
+- Is the executive summary accessible to non-academics?
+- Are key takeaways clearly stated?
+- Would a busy practitioner understand the implications?
+
+Format your response with numbered major and minor practical concerns.''',
+
+    'clarity': '''Act as an editor reviewing an academic manuscript for clarity and accessibility.
+
+Focus on **writing quality and presentation**:
+
+**1. Structure & Organization**
+- Is the paper logically organized?
+- Do sections flow naturally?
+- Are transitions between ideas smooth?
+
+**2. Clarity of Expression**
+- Is the writing clear and concise?
+- Are complex ideas explained accessibly?
+- Is jargon minimized or explained?
+
+**3. Abstract & Introduction**
+- Does the abstract accurately summarize the paper?
+- Is the research question clearly stated?
+- Is the contribution immediately apparent?
+
+**4. Tables & Figures**
+- Are visualizations clear and informative?
+- Can tables be understood without reading the text?
+- Are captions complete and helpful?
+
+**5. Discussion & Conclusion**
+- Are limitations honestly acknowledged?
+- Are findings interpreted appropriately (not overclaimed)?
+- Is the conclusion memorable and impactful?
+
+Format your response with numbered major and minor presentation concerns.''',
 }
 
+# Backward compatibility: alias discipline to focus
+DISCIPLINE_PROMPTS = FOCUS_PROMPTS
 
-def status():
+
+# =============================================================================
+# REVIEW MANAGEMENT FUNCTIONS
+# =============================================================================
+
+def status(manuscript: str = None):
     """Display current review cycle status from REVISION_TRACKER.md."""
-    print("Review Status")
+    paths = get_manuscript_paths(manuscript)
+    tracker_file = paths['tracker_file']
+
+    print(f"Review Status: {paths['name']}")
     print("=" * 50)
 
-    if not TRACKER_FILE.exists():
+    if not tracker_file.exists():
         print("\nNo active review cycle.")
-        print(f"Start one with: python src/pipeline.py review_new --discipline <name>")
+        print(f"Start one with: python src/pipeline.py review_new --manuscript {manuscript or DEFAULT_MANUSCRIPT} --focus <name>")
         return
 
-    content = TRACKER_FILE.read_text()
+    content = tracker_file.read_text()
 
     # Parse summary statistics
-    print("\nCurrent Tracker:", TRACKER_FILE)
+    print(f"\nCurrent Tracker: {tracker_file}")
 
-    # Extract review number and discipline
+    # Extract review number and focus
     review_match = re.search(r'\*\*Review\*\*:\s*#?(\w+)', content)
-    discipline_match = re.search(r'\*\*Discipline\*\*:\s*(\w+)', content)
+    focus_match = re.search(r'\*\*(?:Discipline|Focus)\*\*:\s*(\w+)', content)
 
     if review_match:
         print(f"Review: #{review_match.group(1)}")
-    if discipline_match:
-        print(f"Discipline: {discipline_match.group(1)}")
+    if focus_match:
+        print(f"Focus: {focus_match.group(1)}")
 
     # Extract summary table
     summary_match = re.search(
@@ -146,20 +323,28 @@ def status():
     print("\n" + "=" * 50)
 
 
-def new_cycle(discipline: str = 'general'):
-    """Initialize a new review cycle with discipline-specific template."""
-    if discipline not in DISCIPLINE_PROMPTS:
-        print(f"ERROR: Unknown discipline '{discipline}'")
-        print(f"Available: {', '.join(DISCIPLINE_PROMPTS.keys())}")
+def new_cycle(manuscript: str = None, focus: str = 'general'):
+    """Initialize a new review cycle with focus-specific template."""
+    paths = get_manuscript_paths(manuscript)
+
+    if focus not in FOCUS_PROMPTS:
+        print(f"ERROR: Unknown focus '{focus}'")
+        print(f"Available: {', '.join(FOCUS_PROMPTS.keys())}")
         return
 
-    print(f"Initializing new review cycle (discipline: {discipline})")
+    print(f"Initializing new review cycle")
+    print(f"  Manuscript: {paths['name']}")
+    print(f"  Focus: {focus}")
     print("=" * 50)
+
+    # Ensure directories exist
+    paths['reviews_dir'].mkdir(parents=True, exist_ok=True)
+    paths['archive_dir'].mkdir(parents=True, exist_ok=True)
 
     # Determine review number
     review_num = 1
-    if ARCHIVE_DIR.exists():
-        existing = list(ARCHIVE_DIR.glob('review_*.md'))
+    if paths['archive_dir'].exists():
+        existing = list(paths['archive_dir'].glob('review_*.md'))
         if existing:
             nums = [int(re.search(r'review_(\d+)', f.name).group(1))
                     for f in existing if re.search(r'review_(\d+)', f.name)]
@@ -167,20 +352,21 @@ def new_cycle(discipline: str = 'general'):
                 review_num = max(nums) + 1
 
     # Check if there's an active review
-    if TRACKER_FILE.exists():
-        content = TRACKER_FILE.read_text()
+    tracker_file = paths['tracker_file']
+    if tracker_file.exists():
+        content = tracker_file.read_text()
         if 'PENDING' in content.upper() or re.search(r'\|\s*\d+\s*\|\s*\d+\s*\|\s*\d+\s*\|\s*[1-9]', content):
             print("\nWARNING: Active review has pending items.")
-            print("Archive current review first with: python src/pipeline.py review_archive")
+            print(f"Archive current review first with: python src/pipeline.py review_archive --manuscript {manuscript or DEFAULT_MANUSCRIPT}")
             return
 
     # Create new tracker from template
     today = datetime.now().strftime('%Y-%m-%d')
     template = f'''# Revision Tracker: Response to Synthetic Review
 
-**Document**: [Project Name] manuscript
+**Document**: {paths['title']}
 **Review**: #{review_num}
-**Discipline**: {discipline}
+**Focus**: {focus}
 **Last Updated**: {today}
 
 ---
@@ -197,7 +383,7 @@ def new_cycle(discipline: str = 'general'):
 ## Prompt Used
 
 ```
-{DISCIPLINE_PROMPTS[discipline]}
+{FOCUS_PROMPTS[focus]}
 ```
 
 ---
@@ -246,66 +432,72 @@ def new_cycle(discipline: str = 'general'):
 *Last updated: {today}*
 '''
 
-    TRACKER_FILE.write_text(template)
-    print(f"\nCreated: {TRACKER_FILE}")
-    print(f"\nReview #{review_num} initialized with {discipline} discipline.")
+    tracker_file.write_text(template)
+    print(f"\nCreated: {tracker_file}")
+    print(f"\nReview #{review_num} initialized with {focus} focus.")
     print("\nNext steps:")
     print("1. Generate a synthetic review using the prompt above")
     print("2. Paste reviewer comments into the tracker")
     print("3. Triage each comment with a status classification")
     print("4. Implement changes and update tracker")
-    print("5. Run: python src/pipeline.py review_verify")
+    print(f"5. Run: python src/pipeline.py review_verify --manuscript {manuscript or DEFAULT_MANUSCRIPT}")
 
 
-def archive():
+def archive(manuscript: str = None):
     """Archive current review cycle and reset for new one."""
-    print("Archiving Review Cycle")
+    paths = get_manuscript_paths(manuscript)
+
+    print(f"Archiving Review Cycle: {paths['name']}")
     print("=" * 50)
 
-    if not TRACKER_FILE.exists():
+    tracker_file = paths['tracker_file']
+    if not tracker_file.exists():
         print("No active review to archive.")
         return
 
     # Ensure archive directory exists
-    ARCHIVE_DIR.mkdir(parents=True, exist_ok=True)
+    paths['archive_dir'].mkdir(parents=True, exist_ok=True)
 
     # Determine archive filename
-    content = TRACKER_FILE.read_text()
+    content = tracker_file.read_text()
     review_match = re.search(r'\*\*Review\*\*:\s*#?(\d+)', content)
 
     if review_match:
         review_num = review_match.group(1)
     else:
         # Find next available number
-        existing = list(ARCHIVE_DIR.glob('review_*.md'))
+        existing = list(paths['archive_dir'].glob('review_*.md'))
         nums = [int(re.search(r'review_(\d+)', f.name).group(1))
                 for f in existing if re.search(r'review_(\d+)', f.name)]
         review_num = max(nums) + 1 if nums else 1
 
-    archive_file = ARCHIVE_DIR / f'review_{review_num:02d}.md'
+    archive_file = paths['archive_dir'] / f'review_{int(review_num):02d}.md'
 
     # Copy to archive
-    shutil.copy(TRACKER_FILE, archive_file)
+    shutil.copy(tracker_file, archive_file)
     print(f"Archived to: {archive_file}")
 
     # Reset tracker
-    TRACKER_FILE.unlink()
-    print(f"Removed: {TRACKER_FILE}")
+    tracker_file.unlink()
+    print(f"Removed: {tracker_file}")
 
     print(f"\nReview #{review_num} archived successfully.")
-    print("Start new review with: python src/pipeline.py review_new --discipline <name>")
+    print(f"Start new review with: python src/pipeline.py review_new --manuscript {manuscript or DEFAULT_MANUSCRIPT} --focus <name>")
 
 
-def verify():
+def verify(manuscript: str = None):
     """Run verification checklist for current review cycle."""
-    print("Verification Checklist")
+    paths = get_manuscript_paths(manuscript)
+
+    print(f"Verification Checklist: {paths['name']}")
     print("=" * 50)
 
-    if not TRACKER_FILE.exists():
+    tracker_file = paths['tracker_file']
+    if not tracker_file.exists():
         print("No active review to verify.")
         return
 
-    content = TRACKER_FILE.read_text()
+    content = tracker_file.read_text()
 
     # Find all checklist items
     checked = re.findall(r'- \[x\]\s+(.+)', content, re.IGNORECASE)
@@ -326,63 +518,213 @@ def verify():
 
         if len(unchecked) == 0:
             print("\nAll verification items complete!")
-            print("Ready to archive: python src/pipeline.py review_archive")
+            print(f"Ready to archive: python src/pipeline.py review_archive --manuscript {manuscript or DEFAULT_MANUSCRIPT}")
         else:
             print(f"\n{len(unchecked)} items remaining before archive.")
 
+    # Journal compliance checks
+    print("\n" + "-" * 50)
+    print("Journal Compliance Checks")
+    print("-" * 50)
+
+    manuscript_dir = paths['manuscript_dir']
+    if manuscript_dir.exists():
+        # Word count check
+        word_count = count_manuscript_words(manuscript_dir)
+        if word_count > 0:
+            print(f"\n  Word count: {word_count:,}")
+            if word_count > 10000:
+                print("    WARNING: May exceed typical journal limits")
+
+        # Self-reference check
+        self_refs = check_self_references(manuscript_dir)
+        if self_refs:
+            print(f"\n  Self-references found: {len(self_refs)}")
+            for ref in self_refs[:3]:  # Show first 3
+                print(f"    - {ref[:60]}...")
+            if len(self_refs) > 3:
+                print(f"    ... and {len(self_refs) - 3} more")
+        else:
+            print("\n  Self-references: None found (good)")
+
+        # Abstract length
+        abstract_words = check_abstract_length(manuscript_dir)
+        if abstract_words > 0:
+            print(f"\n  Abstract words: {abstract_words}")
+            if abstract_words > 250:
+                print("    WARNING: May exceed typical limits (150-250 words)")
+    else:
+        print(f"\n  Manuscript directory not found: {manuscript_dir}")
+
+    # Generate QA report
+    metrics = QAMetrics()
+    metrics.add('manuscript', manuscript or DEFAULT_MANUSCRIPT)
+    metrics.add('checklist_completed', len(checked))
+    metrics.add('checklist_pending', len(unchecked))
+    if total > 0:
+        metrics.add_pct('checklist_progress', pct)
+    generate_qa_report('s07_review_verify', metrics)
+
+    print("\n" + "=" * 50)
+
 
 def report():
-    """Generate summary report of all review cycles."""
+    """Generate summary report of all review cycles across all manuscripts."""
     print("Review Cycles Report")
     print("=" * 50)
 
-    # Check for archived reviews
-    if not ARCHIVE_DIR.exists():
-        archived = []
-    else:
-        archived = sorted(ARCHIVE_DIR.glob('review_*.md'))
+    total_cycles = 0
+    total_archived = 0
 
-    # Check for active review
-    active = TRACKER_FILE.exists()
+    for ms_name, ms_config in MANUSCRIPTS.items():
+        paths = get_manuscript_paths(ms_name)
 
-    total_cycles = len(archived) + (1 if active else 0)
-    print(f"\nTotal review cycles: {total_cycles}")
-    print(f"  Archived: {len(archived)}")
-    print(f"  Active: {'Yes' if active else 'No'}")
+        # Check for archived reviews
+        if paths['archive_dir'].exists():
+            archived = sorted(paths['archive_dir'].glob('review_*.md'))
+        else:
+            archived = []
 
-    if archived:
-        print("\nArchived Reviews:")
-        print("-" * 40)
-        for f in archived:
-            content = f.read_text()
-            discipline_match = re.search(r'\*\*Discipline\*\*:\s*(\w+)', content)
-            date_match = re.search(r'\*Review generated:\s*(\d{4}-\d{2}-\d{2})', content)
+        # Check for active review
+        tracker_file = paths['tracker_file']
+        active = tracker_file.exists()
 
-            discipline = discipline_match.group(1) if discipline_match else 'unknown'
-            date = date_match.group(1) if date_match else 'unknown'
+        ms_total = len(archived) + (1 if active else 0)
+        total_cycles += ms_total
+        total_archived += len(archived)
 
-            # Count comments
-            major = len(re.findall(r'### Comment \d+:', content))
-            minor = len(re.findall(r'### Minor \d+:', content))
+        if ms_total > 0:
+            print(f"\n{paths['name']}:")
+            print("-" * 40)
+            print(f"  Archived: {len(archived)}")
+            print(f"  Active: {'Yes' if active else 'No'}")
 
-            print(f"  {f.name}: {discipline}, {date}, {major} major, {minor} minor")
+            if archived:
+                for f in archived:
+                    content = f.read_text()
+                    focus_match = re.search(r'\*\*(?:Discipline|Focus)\*\*:\s*(\w+)', content)
+                    date_match = re.search(r'\*Review generated:\s*(\d{4}-\d{2}-\d{2})', content)
 
-    if active:
-        print("\nActive Review:")
-        print("-" * 40)
-        status()
+                    focus = focus_match.group(1) if focus_match else 'unknown'
+                    date = date_match.group(1) if date_match else 'unknown'
+
+                    # Count comments
+                    major = len(re.findall(r'### Comment \d+:', content))
+                    minor = len(re.findall(r'### Minor \d+:', content))
+
+                    print(f"    {f.name}: {focus}, {date}, {major} major, {minor} minor")
+
+    print("\n" + "=" * 50)
+    print(f"Total across all manuscripts: {total_cycles} cycles ({total_archived} archived)")
 
 
-def main(action: str = 'status', discipline: str = 'general'):
+# =============================================================================
+# JOURNAL COMPLIANCE UTILITIES
+# =============================================================================
+
+def count_manuscript_words(manuscript_dir: Path) -> int:
+    """Count words in manuscript QMD files, excluding code and YAML."""
+    total_words = 0
+
+    for qmd_file in manuscript_dir.glob('*.qmd'):
+        try:
+            content = qmd_file.read_text()
+
+            # Remove YAML frontmatter
+            content = re.sub(r'^---\n.*?\n---\n', '', content, flags=re.DOTALL)
+
+            # Remove code blocks
+            content = re.sub(r'```.*?```', '', content, flags=re.DOTALL)
+
+            # Remove inline code
+            content = re.sub(r'`[^`]+`', '', content)
+
+            # Remove markdown links (keep text)
+            content = re.sub(r'\[([^\]]+)\]\([^\)]+\)', r'\1', content)
+
+            # Count words
+            words = len(content.split())
+            total_words += words
+        except Exception:
+            continue
+
+    return total_words
+
+
+def check_self_references(manuscript_dir: Path) -> list[str]:
+    """Check for self-referential phrases like 'this study'."""
+    patterns = [
+        r'[Tt]his study',
+        r'[Tt]his paper',
+        r'[Tt]his research',
+        r'[Oo]ur study',
+        r'[Oo]ur paper',
+        r'[Oo]ur research',
+        r'[Ww]e find',
+        r'[Ww]e show',
+        r'[Ww]e demonstrate',
+    ]
+
+    matches = []
+    for qmd_file in manuscript_dir.glob('*.qmd'):
+        try:
+            content = qmd_file.read_text()
+            for pattern in patterns:
+                for match in re.finditer(pattern, content):
+                    # Get context around match
+                    start = max(0, match.start() - 20)
+                    end = min(len(content), match.end() + 40)
+                    context = content[start:end].replace('\n', ' ')
+                    matches.append(context.strip())
+        except Exception:
+            continue
+
+    return matches
+
+
+def check_abstract_length(manuscript_dir: Path) -> int:
+    """Count words in the abstract."""
+    main_file = manuscript_dir / 'index.qmd'
+    if not main_file.exists():
+        return 0
+
+    try:
+        content = main_file.read_text()
+
+        # Find abstract in YAML frontmatter
+        yaml_match = re.search(r'^---\n(.*?)\n---', content, flags=re.DOTALL)
+        if yaml_match:
+            yaml_content = yaml_match.group(1)
+            abstract_match = re.search(r'abstract:\s*["|](.+?)["|]', yaml_content, flags=re.DOTALL)
+            if abstract_match:
+                abstract = abstract_match.group(1)
+                return len(abstract.split())
+
+        # Alternative: look for abstract section
+        abstract_section = re.search(r'## Abstract\n+(.+?)(?:\n## |\Z)', content, flags=re.DOTALL)
+        if abstract_section:
+            return len(abstract_section.group(1).split())
+
+    except Exception:
+        pass
+
+    return 0
+
+
+# =============================================================================
+# MAIN ENTRY POINT
+# =============================================================================
+
+def main(action: str = 'status', manuscript: str = None, focus: str = 'general'):
     """Main entry point for review management."""
     if action == 'status':
-        status()
+        status(manuscript)
     elif action == 'new':
-        new_cycle(discipline)
+        new_cycle(manuscript, focus)
     elif action == 'archive':
-        archive()
+        archive(manuscript)
     elif action == 'verify':
-        verify()
+        verify(manuscript)
     elif action == 'report':
         report()
     else:

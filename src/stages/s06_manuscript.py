@@ -43,6 +43,7 @@ from utils.helpers import (
     load_config,
     ensure_dir,
 )
+from stages._qa_utils import generate_qa_report, QAMetrics
 
 
 # ============================================================
@@ -437,6 +438,17 @@ def validate(
         report_path = diag_dir / 'submission_validation.md'
         report_path.write_text(validation.to_markdown())
         print(f"\n  Report saved: {report_path}")
+
+    # Generate QA report
+    metrics = QAMetrics()
+    metrics.add('journal', journal)
+    metrics.add('n_checks', len(validation.checks))
+    n_passed = sum(1 for c in validation.checks if c.passed)
+    n_failed = len(validation.checks) - n_passed
+    metrics.add('n_passed', n_passed)
+    metrics.add('n_failed', n_failed)
+    metrics.add_pct('pass_rate', (n_passed / len(validation.checks) * 100) if validation.checks else 0)
+    generate_qa_report('s06_manuscript', metrics)
 
     print("\n" + "=" * 60)
     print("Stage 06 complete.")

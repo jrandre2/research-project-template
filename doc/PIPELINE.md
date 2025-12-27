@@ -2,7 +2,7 @@
 
 **Related**: [DATA_DICTIONARY.md](DATA_DICTIONARY.md) | [METHODOLOGY.md](METHODOLOGY.md)
 **Status**: Active
-**Last Updated**: 2025-12-25
+**Last Updated**: 2025-12-27
 
 ---
 
@@ -19,13 +19,18 @@ python src/pipeline.py run_estimation --specification baseline
 python src/pipeline.py estimate_robustness
 python src/pipeline.py make_figures
 
+# Stage discovery and versioning
+python src/pipeline.py list_stages                # List all stages
+python src/pipeline.py list_stages -p s00         # List s00 versions
+python src/pipeline.py run_stage s00_ingest       # Run specific stage
+
 # Render manuscript
 cd manuscript_quarto && ./render_all.sh
 ```
 
 Note: `ingest_data` generates synthetic demo data if `data_raw/` has no matching files.
 
-Journal validation is optional. If no journal config is set, skip `validate_submission` and render with Quarto only. When a journal config exists, `validate_submission` enforces word counts, section requirements, and formatting rules.
+Journal validation is optional. If no journal config is set, skip `validate_submission` and render with Quarto only. When a journal config exists, `validate_submission` checks word count (when configured), abstract length, required sections, figure formats, and bibliography/citation presence.
 
 Review cycles are handled through `review_new`, `review_verify`, and `review_archive`, with `manuscript_quarto/REVISION_TRACKER.md` and `doc/reviews/archive/` preserving responses. Divergent drafts use manuscript variants (see `doc/MANUSCRIPT_VARIANTS.md`).
 
@@ -161,15 +166,23 @@ If you need a top-level export, copy from `manuscript_quarto/figures/` to `figur
 ### Stage 07: Review Management
 
 **Commands:**
-- `python src/pipeline.py review_status`
-- `python src/pipeline.py review_new --discipline economics`
-- `python src/pipeline.py review_verify`
-- `python src/pipeline.py review_archive`
+
+- `python src/pipeline.py review_status [-m manuscript]`
+- `python src/pipeline.py review_new [-m manuscript] [-f focus]`
+- `python src/pipeline.py review_verify [-m manuscript]`
+- `python src/pipeline.py review_archive [-m manuscript]`
 - `python src/pipeline.py review_report`
 
-**Purpose:** Manage synthetic peer review cycles and track responses.
+**Options:**
+
+- `--manuscript, -m`: Target manuscript (default: main)
+- `--focus, -f`: Review focus area (economics, engineering, social_sciences, general, methods, policy, clarity)
+- `--discipline, -d`: Deprecated alias for --focus
+
+**Purpose:** Manage synthetic peer review cycles and track responses. Supports multi-manuscript projects.
 
 **Outputs:**
+
 - `manuscript_quarto/REVISION_TRACKER.md`
 - `doc/reviews/archive/` (archived reviews)
 
@@ -184,13 +197,75 @@ If you need a top-level export, copy from `manuscript_quarto/figures/` to `figur
 - `python src/pipeline.py journal_validate --config natural_hazards`
 - `python src/pipeline.py journal_compare --journal natural_hazards`
 - `python src/pipeline.py journal_parse --input guidelines.txt --output new_journal.yml`
+- `python src/pipeline.py journal_parse --url https://example.com/guidelines --journal "Journal Name" --output journal.yml --save-raw`
+- `python src/pipeline.py journal_fetch --url https://example.com/guidelines --journal "Journal Name" --text`
 
 **Purpose:** List, validate, compare, and parse journal requirements.
 
 **Outputs:**
 - `manuscript_quarto/journal_configs/<name>.yml` (for `journal_parse`)
+- `doc/journal_guidelines/*` (when using `journal_fetch` or `journal_parse --save-raw`)
+
+**Notes:**
+- PDF guidelines must be converted to text or HTML before parsing.
+- Parsing uses heuristic extraction; manual review is required.
 
 **Implementation:** `src/stages/s08_journal_parser.py`
+
+---
+
+## Versioned Stages
+
+Stages can evolve over time using version suffixes. This allows keeping alternative implementations while maintaining a clear evolution history.
+
+**Naming Convention:** `s00_ingest` → `s00b_standardize` → `s00c_enhanced`
+
+**Commands:**
+
+```bash
+# List all available stages
+python src/pipeline.py list_stages
+
+# List versions of a specific stage
+python src/pipeline.py list_stages -p s00
+
+# Run a specific stage version
+python src/pipeline.py run_stage s00b_standardize
+```
+
+**Benefits:**
+
+- Preserve alternative implementations for comparison
+- Track methodological evolution
+- Switch between versions for robustness checks
+
+---
+
+## QA Reports
+
+Each pipeline stage automatically generates quality assurance reports.
+
+**Output Location:** `data_work/quality/`
+
+**File Pattern:** `{stage_name}_quality_{timestamp}.csv`
+
+**Example:**
+
+```text
+data_work/quality/s00_ingest_quality_20251227_143022.csv
+data_work/quality/s01_link_quality_20251227_143025.csv
+data_work/quality/s02_panel_quality_20251227_143028.csv
+```
+
+**Metrics Tracked:**
+
+- Row and column counts
+- Missing value percentages
+- Duplicate row counts
+- Memory usage
+- Stage-specific metrics (e.g., linkage rates, estimation sample sizes)
+
+**Configuration:** QA reports are controlled by `ENABLE_QA_REPORTS` in `src/config.py`.
 
 ---
 
