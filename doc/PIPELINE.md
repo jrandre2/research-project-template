@@ -214,6 +214,90 @@ If you need a top-level export, copy from `manuscript_quarto/figures/` to `figur
 
 ---
 
+## Stage 09: AI-Assisted Writing
+
+**Purpose:** Generate draft manuscript sections from pipeline outputs using LLMs.
+
+**Module:** `src/stages/s09_writing.py`
+
+### Commands
+
+| Command          | Description                                  |
+| ---------------- | -------------------------------------------- |
+| `draft_results`  | Draft results section from estimation tables |
+| `draft_captions` | Generate figure captions                     |
+| `draft_abstract` | Synthesize abstract from manuscript          |
+
+### Usage
+
+```bash
+# Draft results section from estimation table
+python src/pipeline.py draft_results --table main_results
+python src/pipeline.py draft_results --table main_results --section primary
+
+# Preview prompt without API call
+python src/pipeline.py draft_results --table main_results --dry-run
+
+# Generate figure captions
+python src/pipeline.py draft_captions --figure "fig_*.png"
+
+# Synthesize abstract with word limit
+python src/pipeline.py draft_abstract --max-words 200
+
+# Use alternative provider
+python src/pipeline.py draft_results --table main_results --provider openai
+```
+
+### Options
+
+| Option             | Description                                   |
+| ------------------ | --------------------------------------------- |
+| `--table, -t`      | Diagnostic CSV name (without .csv extension)  |
+| `--section, -s`    | Section name for output file (default: main)  |
+| `--figure, -f`     | Figure glob pattern (e.g., "fig_*.png")       |
+| `--manuscript, -m` | Target manuscript (default: main)             |
+| `--max-words`      | Target word limit for abstract (default: 250) |
+| `--dry-run`        | Show prompt without making API call           |
+| `--provider, -p`   | LLM provider: anthropic or openai             |
+
+### Configuration
+
+LLM settings in `src/config.py`:
+
+```python
+LLM_PROVIDER = 'anthropic'  # or 'openai'
+LLM_MODELS = {
+    'anthropic': 'claude-sonnet-4-20250514',
+    'openai': 'gpt-4-turbo-preview',
+}
+LLM_TEMPERATURE = 0.3
+LLM_MAX_TOKENS = 4096
+```
+
+**Environment Variables:**
+
+- `ANTHROPIC_API_KEY`: Required for Anthropic provider
+- `OPENAI_API_KEY`: Required for OpenAI provider
+
+### Output
+
+Drafts are saved to `manuscript_quarto/drafts/` with metadata headers:
+
+```markdown
+<!-- AI-Generated Draft
+     Source: data_work/diagnostics/main_results.csv
+     Provider: anthropic/claude-sonnet-4-20250514
+     Generated: 2025-12-27 14:30:22
+     Status: REQUIRES HUMAN REVIEW
+-->
+```
+
+All drafts require human review before integration into the manuscript.
+
+**Implementation:** `src/stages/s09_writing.py`, `src/llm/`
+
+---
+
 ## Versioned Stages
 
 Stages can evolve over time using version suffixes. This allows keeping alternative implementations while maintaining a clear evolution history.

@@ -166,6 +166,38 @@ Configure manuscripts in `src/config.py` via the `MANUSCRIPTS` dictionary.
 
 See `doc/SYNTHETIC_REVIEW_PROCESS.md` for full methodology.
 
+## AI-Assisted Drafting
+
+Generate draft manuscript sections from pipeline outputs (requires LLM API key).
+
+```bash
+# Draft results section from estimation table
+python src/pipeline.py draft_results --table main_results
+python src/pipeline.py draft_results --table main_results --dry-run  # Preview prompt
+
+# Generate figure captions
+python src/pipeline.py draft_captions --figure "fig_*.png"
+
+# Synthesize abstract from manuscript
+python src/pipeline.py draft_abstract --max-words 200
+
+# Use alternative provider
+python src/pipeline.py draft_results --table main_results --provider openai
+```
+
+**Output:** `manuscript_quarto/drafts/` - All drafts require human review before integration.
+
+**Configuration in `src/config.py`:**
+
+```python
+LLM_PROVIDER = 'anthropic'  # or 'openai'
+LLM_TEMPERATURE = 0.3
+```
+
+**Environment variables:** `ANTHROPIC_API_KEY` or `OPENAI_API_KEY`
+
+See `doc/skills.md` for full command reference.
+
 ## Key References
 
 | Topic | Document |

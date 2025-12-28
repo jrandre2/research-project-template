@@ -47,7 +47,17 @@ journal_validate : Validate journal config against template
 journal_compare : Compare manuscript to journal requirements
     Options: --journal, --manuscript
 journal_parse : Parse raw guidelines into config
-    Options: --input, --output, --journal
+    Options: --input, --output, --journal, --url, --template
+journal_fetch : Fetch journal guidelines from URL
+    Options: --url, --output, --journal, --text
+
+# AI-Assisted Drafting
+draft_results : Draft results section from estimation tables
+    Options: --table, --section, --dry-run, --provider
+draft_captions : Generate figure captions
+    Options: --figure, --dry-run, --provider
+draft_abstract : Synthesize abstract from manuscript
+    Options: --max-words, --dry-run, --provider
 
 # Data Audit
 audit_data : Audit pipeline data files
@@ -68,6 +78,11 @@ run_stage : Run a specific stage by name (supports versioned stages)
     Options: <stage_name>
 list_stages : List available stage versions
     Options: --prefix
+
+# Cache Management
+cache : Manage pipeline cache
+    Actions: stats (show usage), clear (remove cached data)
+    Options: --stage
 
 Usage
 -----
@@ -342,6 +357,82 @@ def parse_args() -> argparse.Namespace:
         help='Also save a text-only version'
     )
 
+    # AI-Assisted Drafting Commands
+    p_draft_results = sub.add_parser('draft_results', help='Draft results section from estimation tables')
+    p_draft_results.add_argument(
+        '--table', '-t',
+        required=True,
+        help='Diagnostic CSV name (without .csv extension)'
+    )
+    p_draft_results.add_argument(
+        '--section', '-s',
+        default='main',
+        help='Section name for output file (default: main)'
+    )
+    p_draft_results.add_argument(
+        '--manuscript', '-m',
+        default=None,
+        help='Target manuscript (default: main)'
+    )
+    p_draft_results.add_argument(
+        '--dry-run',
+        action='store_true',
+        help='Show prompt without making API call'
+    )
+    p_draft_results.add_argument(
+        '--provider', '-p',
+        default=None,
+        choices=['anthropic', 'openai'],
+        help='LLM provider (default: from config)'
+    )
+
+    p_draft_captions = sub.add_parser('draft_captions', help='Generate figure captions')
+    p_draft_captions.add_argument(
+        '--figure', '-f',
+        required=True,
+        help='Figure glob pattern (e.g., "fig_*.png")'
+    )
+    p_draft_captions.add_argument(
+        '--manuscript', '-m',
+        default=None,
+        help='Target manuscript (default: main)'
+    )
+    p_draft_captions.add_argument(
+        '--dry-run',
+        action='store_true',
+        help='Show prompt without making API call'
+    )
+    p_draft_captions.add_argument(
+        '--provider', '-p',
+        default=None,
+        choices=['anthropic', 'openai'],
+        help='LLM provider (default: from config)'
+    )
+
+    p_draft_abstract = sub.add_parser('draft_abstract', help='Synthesize abstract from manuscript')
+    p_draft_abstract.add_argument(
+        '--manuscript', '-m',
+        default=None,
+        help='Target manuscript (default: main)'
+    )
+    p_draft_abstract.add_argument(
+        '--max-words',
+        type=int,
+        default=250,
+        help='Target word limit (default: 250)'
+    )
+    p_draft_abstract.add_argument(
+        '--dry-run',
+        action='store_true',
+        help='Show prompt without making API call'
+    )
+    p_draft_abstract.add_argument(
+        '--provider', '-p',
+        default=None,
+        choices=['anthropic', 'openai'],
+        help='LLM provider (default: from config)'
+    )
+
     # Data Audit Commands
     p_audit = sub.add_parser('audit_data', help='Audit pipeline data files')
     p_audit.add_argument(
@@ -556,6 +647,35 @@ def main():
             raw_dir=args.raw_dir,
             overwrite=args.overwrite,
             save_text=args.text
+        )
+
+    # AI-Assisted Drafting Commands
+    elif args.cmd == 'draft_results':
+        from stages import s09_writing
+        s09_writing.draft_results(
+            table_name=args.table,
+            section=args.section,
+            manuscript=args.manuscript,
+            dry_run=args.dry_run,
+            provider=args.provider,
+        )
+
+    elif args.cmd == 'draft_captions':
+        from stages import s09_writing
+        s09_writing.draft_captions(
+            figure_pattern=args.figure,
+            manuscript=args.manuscript,
+            dry_run=args.dry_run,
+            provider=args.provider,
+        )
+
+    elif args.cmd == 'draft_abstract':
+        from stages import s09_writing
+        s09_writing.draft_abstract(
+            manuscript=args.manuscript,
+            max_words=args.max_words,
+            dry_run=args.dry_run,
+            provider=args.provider,
         )
 
     # Data Audit Commands

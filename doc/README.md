@@ -162,10 +162,11 @@ Parsing is heuristic; review the generated YAML for completeness.
 | Directory | Purpose |
 |-----------|---------|
 | `src/pipeline.py` | Main CLI entry point |
-| `src/config.py` | Centralized configuration (paths, QA, methodology) |
+| `src/config.py` | Centralized configuration (paths, QA, methodology, LLM) |
 | `src/data_audit.py` | Data auditing utilities |
-| `src/stages/` | Pipeline and workflow stages (s00-s08) |
+| `src/stages/` | Pipeline and workflow stages (s00-s09) |
 | `src/stages/_qa_utils.py` | QA report generation utilities |
+| `src/llm/` | LLM provider abstraction (Anthropic, OpenAI) |
 | `src/agents/` | Project migration tools |
 | `src/utils/` | Shared utilities |
 | `scripts/` | Extended analysis scripts |

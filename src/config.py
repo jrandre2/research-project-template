@@ -17,6 +17,7 @@ Usage
         DATA_WORK_DIR,
         FIGURES_DIR,
         MANUSCRIPT_DIR,
+        DRAFTS_DIR,
 
         # QA Settings
         ENABLE_QA_REPORTS,
@@ -24,6 +25,11 @@ Usage
 
         # Methodological Parameters
         SIGNIFICANCE_LEVEL,
+
+        # LLM Settings
+        LLM_PROVIDER,
+        LLM_MODELS,
+        LLM_TEMPERATURE,
     )
 """
 from __future__ import annotations
@@ -179,6 +185,30 @@ MANUSCRIPTS = {
 
 DEFAULT_MANUSCRIPT = 'main'
 
+# Drafts directory for AI-generated content
+DRAFTS_DIR = MANUSCRIPT_DIR / 'drafts'
+
+
+# =============================================================================
+# LLM SETTINGS (AI-Assisted Writing)
+# =============================================================================
+
+# Default LLM provider ('anthropic' or 'openai')
+LLM_PROVIDER = 'anthropic'
+
+# Model configuration per provider
+LLM_MODELS = {
+    'anthropic': 'claude-sonnet-4-20250514',
+    'openai': 'gpt-4-turbo-preview',
+}
+
+# Current model (based on default provider)
+LLM_MODEL = LLM_MODELS.get(LLM_PROVIDER, 'claude-sonnet-4-20250514')
+
+# Generation settings
+LLM_TEMPERATURE = 0.3  # Lower = more deterministic
+LLM_MAX_TOKENS = 4096  # Maximum tokens per response
+
 
 # =============================================================================
 # VALIDATION
@@ -222,7 +252,7 @@ def validate_config() -> bool:
 
 def ensure_directories() -> None:
     """Create required directories if they don't exist."""
-    for path in [DATA_RAW_DIR, DATA_WORK_DIR, DIAGNOSTICS_DIR, FIGURES_DIR, QA_REPORTS_DIR, CACHE_DIR]:
+    for path in [DATA_RAW_DIR, DATA_WORK_DIR, DIAGNOSTICS_DIR, FIGURES_DIR, QA_REPORTS_DIR, CACHE_DIR, DRAFTS_DIR]:
         path.mkdir(parents=True, exist_ok=True)
 
 

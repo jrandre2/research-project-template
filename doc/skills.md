@@ -324,6 +324,149 @@ python src/pipeline.py journal_fetch --url https://example.com/guidelines --jour
 
 ---
 
+## AI-Assisted Drafting Skills
+
+Generate draft manuscript sections from pipeline outputs using LLMs (requires API key).
+
+### /draft-results
+
+Generate a results section draft from estimation tables.
+
+```bash
+python src/pipeline.py draft_results --table main_results
+python src/pipeline.py draft_results --table main_results --section primary
+python src/pipeline.py draft_results --table robustness_results --dry-run
+python src/pipeline.py draft_results --table main_results --provider openai
+```
+
+**Options:**
+
+- `--table, -t`: Diagnostic CSV name (without .csv extension) - required
+- `--section, -s`: Section name for output file (default: main)
+- `--manuscript, -m`: Target manuscript (default: main)
+- `--dry-run`: Show prompt without making API call
+- `--provider, -p`: LLM provider (anthropic/openai, default: from config)
+
+**Output:** `manuscript_quarto/drafts/results_<section>_<timestamp>.md`
+
+### /draft-captions
+
+Generate figure captions from figure files.
+
+```bash
+python src/pipeline.py draft_captions --figure "fig_*.png"
+python src/pipeline.py draft_captions --figure "*.png" --dry-run
+```
+
+**Options:**
+
+- `--figure, -f`: Figure glob pattern (e.g., "fig_*.png") - required
+- `--manuscript, -m`: Target manuscript (default: main)
+- `--dry-run`: Show prompt without making API call
+- `--provider, -p`: LLM provider (anthropic/openai)
+
+**Output:** `manuscript_quarto/drafts/captions_<timestamp>.md`
+
+### /draft-abstract
+
+Synthesize an abstract from manuscript sections.
+
+```bash
+python src/pipeline.py draft_abstract
+python src/pipeline.py draft_abstract --max-words 200
+python src/pipeline.py draft_abstract --dry-run
+```
+
+**Options:**
+
+- `--manuscript, -m`: Target manuscript (default: main)
+- `--max-words`: Target word limit (default: 250)
+- `--dry-run`: Show prompt without making API call
+- `--provider, -p`: LLM provider (anthropic/openai)
+
+**Output:** `manuscript_quarto/drafts/abstract_<timestamp>.md`
+
+### Configuration
+
+LLM settings in `src/config.py`:
+
+```python
+LLM_PROVIDER = 'anthropic'  # or 'openai'
+LLM_MODELS = {
+    'anthropic': 'claude-sonnet-4-20250514',
+    'openai': 'gpt-4-turbo-preview',
+}
+LLM_TEMPERATURE = 0.3
+LLM_MAX_TOKENS = 4096
+```
+
+**Environment Variables:**
+
+- `ANTHROPIC_API_KEY`: Required for Anthropic provider
+- `OPENAI_API_KEY`: Required for OpenAI provider
+
+**Notes:**
+
+- All drafts include metadata headers and require human review
+- Use `--dry-run` to preview prompts before making API calls
+- Outputs are saved to `manuscript_quarto/drafts/` with timestamps
+
+---
+
+## Data Audit Skills
+
+### /audit
+
+Audit pipeline data files for quality and completeness.
+
+```bash
+python src/pipeline.py audit_data
+python src/pipeline.py audit_data --full --report
+python src/pipeline.py audit_data --output audit.json
+```
+
+**Options:**
+
+- `--full, -f`: Run detailed column analysis
+- `--report, -r`: Save markdown report to `data_work/diagnostics/`
+- `--output, -o`: Custom output path for JSON report
+
+**Output:** Console summary and optional JSON/markdown reports.
+
+---
+
+## Cache Management Skills
+
+### /cache-stats
+
+Show cache usage statistics for all pipeline stages.
+
+```bash
+python src/pipeline.py cache stats
+```
+
+**Output:** Cache file counts and sizes per stage.
+
+### /cache-clear
+
+Clear cached pipeline results to force recomputation.
+
+```bash
+python src/pipeline.py cache clear                    # Clear all caches
+python src/pipeline.py cache clear -s s03_estimation  # Clear specific stage
+```
+
+**Options:**
+
+- `--stage, -s`: Clear cache for specific stage only
+
+**Notes:**
+
+- Use when input data changes or you want fresh results
+- Related CLI flags: `--no-cache`, `--sequential`, `--workers`
+
+---
+
 ## Documentation Skills
 
 ### /update-docs

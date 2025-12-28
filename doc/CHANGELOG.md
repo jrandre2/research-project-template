@@ -4,6 +4,52 @@ All notable changes to this project are documented in this file.
 
 ---
 
+## [2025-12-27] - AI-Assisted Drafting and Documentation Sync
+
+### Added
+
+- **AI-Assisted Manuscript Drafting (Stage 09)**
+  - `draft_results`: Generate results section from estimation tables
+  - `draft_captions`: Generate figure captions from figures
+  - `draft_abstract`: Synthesize abstract from manuscript sections
+  - Multi-provider support (Anthropic Claude, OpenAI GPT-4)
+  - `--dry-run` flag to preview prompts without API calls
+  - New `src/llm/` package with provider abstraction
+
+- **Cache Management Commands**
+  - `cache stats`: Show cache usage statistics
+  - `cache clear`: Clear cached pipeline results
+  - Stage-specific cache clearing with `--stage` option
+
+- **Documentation Updates**
+  - Added Data Audit Skills section to skills.md
+  - Added Cache Management Skills section to skills.md
+  - Updated all stage count references from s00-s08 to s00-s09
+  - Added src/llm/ package to architecture documentation
+
+### Changed
+
+- `src/config.py`: Added LLM configuration settings (provider, models, temperature)
+- `src/config.py`: Added `DRAFTS_DIR` for AI-generated content
+- Updated project structure documentation to include new modules
+
+### Files Modified
+
+- src/stages/s09_writing.py (new)
+- src/llm/__init__.py, base.py, anthropic.py, openai.py, prompts.py (new)
+- src/config.py
+- src/pipeline.py
+- doc/PIPELINE.md
+- doc/skills.md
+- doc/ARCHITECTURE.md
+- doc/README.md
+- README.md
+- CLAUDE.md
+- tests/test_llm/ (new)
+- tests/test_stages/test_s09_writing.py (new)
+
+---
+
 ## [2025-12-26] - Journal Guidelines Tooling and Docs Sync
 
 - Added guideline fetch + heuristic parsing for journal configs

@@ -95,13 +95,14 @@ project/
 │   ├── code/                   # Quarto code chunks
 │   ├── data/                   # Manuscript data
 │   ├── figures/                # Manuscript figures
+│   ├── drafts/                 # AI-generated draft sections
 │   ├── variants/               # Divergent manuscript drafts
 │   └── journal_configs/        # Journal requirements
 │
 ├── src/                         # Source code
 │   ├── pipeline.py             # Main CLI entry point
 │   ├── data_audit.py           # Data auditing
-│   ├── stages/                 # Pipeline and workflow stages
+│   ├── stages/                 # Pipeline and workflow stages (s00-s09)
 │   │   ├── s00_ingest.py      # Data ingestion
 │   │   ├── s01_link.py        # Record linkage
 │   │   ├── s02_panel.py       # Panel construction
@@ -110,7 +111,14 @@ project/
 │   │   ├── s05_figures.py     # Figure generation
 │   │   ├── s06_manuscript.py  # Manuscript validation
 │   │   ├── s07_reviews.py     # Review management
-│   │   └── s08_journal_parser.py # Journal configuration tools
+│   │   ├── s08_journal_parser.py # Journal configuration tools
+│   │   └── s09_writing.py     # AI-assisted manuscript drafting
+│   ├── llm/                    # LLM provider abstraction
+│   │   ├── __init__.py        # Provider factory
+│   │   ├── base.py            # LLMProvider Protocol
+│   │   ├── anthropic.py       # Claude provider
+│   │   ├── openai.py          # GPT-4 provider
+│   │   └── prompts.py         # Prompt templates
 │   ├── agents/                 # Project migration tools
 │   │   ├── project_analyzer.py
 │   │   ├── structure_mapper.py

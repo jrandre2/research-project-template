@@ -100,7 +100,7 @@ See `demo/README.md` for a small sample dataset and expected outputs that exerci
 ├── src/                   # Pipeline and tools
 │   ├── pipeline.py        # CLI entry point
 │   ├── data_audit.py      # Data audit utilities
-│   ├── stages/            # Pipeline and workflow stages
+│   ├── stages/            # Pipeline and workflow stages (s00-s09)
 │   │   ├── s00_ingest.py
 │   │   ├── s01_link.py
 │   │   ├── s02_panel.py
@@ -109,7 +109,12 @@ See `demo/README.md` for a small sample dataset and expected outputs that exerci
 │   │   ├── s05_figures.py
 │   │   ├── s06_manuscript.py
 │   │   ├── s07_reviews.py
-│   │   └── s08_journal_parser.py
+│   │   ├── s08_journal_parser.py
+│   │   └── s09_writing.py     # AI-assisted manuscript drafting
+│   ├── llm/               # LLM provider abstraction
+│   │   ├── anthropic.py   # Claude provider
+│   │   ├── openai.py      # GPT-4 provider
+│   │   └── prompts.py     # Prompt templates
 │   ├── agents/            # Project migration tools
 │   │   ├── project_analyzer.py
 │   │   ├── structure_mapper.py
@@ -178,6 +183,23 @@ Parsing is heuristic; review the generated YAML for completeness.
 ### Data Audit
 
 - `python src/pipeline.py audit_data --full --report`
+
+### AI-Assisted Drafting
+
+Generate draft manuscript sections using LLMs (requires API key):
+
+- `python src/pipeline.py draft_results --table main_results`
+- `python src/pipeline.py draft_results --table main_results --dry-run`
+- `python src/pipeline.py draft_captions --figure "fig_*.png"`
+- `python src/pipeline.py draft_abstract --max-words 200`
+
+Configure provider in `src/config.py` (anthropic or openai). Set `ANTHROPIC_API_KEY` or `OPENAI_API_KEY` environment variable.
+
+### Cache Management
+
+- `python src/pipeline.py cache stats`
+- `python src/pipeline.py cache clear`
+- `python src/pipeline.py cache clear -s s03_estimation`
 
 ### Project Migration
 
