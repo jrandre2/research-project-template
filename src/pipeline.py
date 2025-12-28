@@ -134,11 +134,64 @@ def parse_args() -> argparse.Namespace:
         default='full',
         help='Sample restriction (default: full)'
     )
+    p_est.add_argument(
+        '--all',
+        action='store_true',
+        help='Run all specifications'
+    )
+    p_est.add_argument(
+        '--no-cache',
+        action='store_true',
+        help='Disable caching (recompute all)'
+    )
+    p_est.add_argument(
+        '--sequential',
+        action='store_true',
+        help='Disable parallel execution'
+    )
+    p_est.add_argument(
+        '--workers', '-w',
+        type=int,
+        default=None,
+        help='Number of parallel workers (default: auto)'
+    )
 
-    sub.add_parser('estimate_robustness', help='Run robustness checks')
+    p_robust = sub.add_parser('estimate_robustness', help='Run robustness checks')
+    p_robust.add_argument(
+        '--no-cache',
+        action='store_true',
+        help='Disable caching (recompute all)'
+    )
+    p_robust.add_argument(
+        '--sequential',
+        action='store_true',
+        help='Disable parallel execution'
+    )
+    p_robust.add_argument(
+        '--workers', '-w',
+        type=int,
+        default=None,
+        help='Number of parallel workers (default: auto)'
+    )
 
     # Figure and Manuscript Commands
-    sub.add_parser('make_figures', help='Generate publication figures')
+    p_fig = sub.add_parser('make_figures', help='Generate publication figures')
+    p_fig.add_argument(
+        '--no-cache',
+        action='store_true',
+        help='Disable caching'
+    )
+    p_fig.add_argument(
+        '--sequential',
+        action='store_true',
+        help='Disable parallel execution'
+    )
+    p_fig.add_argument(
+        '--workers', '-w',
+        type=int,
+        default=None,
+        help='Number of parallel workers (default: auto)'
+    )
 
     p_val = sub.add_parser('validate_submission', help='Validate manuscript')
     p_val.add_argument(
@@ -380,6 +433,19 @@ def parse_args() -> argparse.Namespace:
         help='Filter by stage prefix (e.g., s00, s01)'
     )
 
+    # Cache Management Commands
+    p_cache = sub.add_parser('cache', help='Manage pipeline cache')
+    p_cache.add_argument(
+        'action',
+        choices=['clear', 'stats'],
+        help='Cache action: clear (remove all) or stats (show usage)'
+    )
+    p_cache.add_argument(
+        '--stage', '-s',
+        default=None,
+        help='Specific stage to target (default: all stages)'
+    )
+
     return p.parse_args()
 
 
@@ -404,16 +470,28 @@ def main():
         from stages import s03_estimation
         s03_estimation.main(
             specification=args.specification,
-            sample=args.sample
+            sample=args.sample,
+            run_all=args.all,
+            use_cache=not args.no_cache,
+            parallel=not args.sequential,
+            n_workers=args.workers,
         )
 
     elif args.cmd == 'estimate_robustness':
         from stages import s04_robustness
-        s04_robustness.main()
+        s04_robustness.main(
+            use_cache=not args.no_cache,
+            parallel=not args.sequential,
+            n_workers=args.workers,
+        )
 
     elif args.cmd == 'make_figures':
         from stages import s05_figures
-        s05_figures.main()
+        s05_figures.main(
+            use_cache=not args.no_cache,
+            parallel=not args.sequential,
+            n_workers=args.workers,
+        )
 
     elif args.cmd == 'validate_submission':
         from stages import s06_manuscript
@@ -601,6 +679,39 @@ def main():
 
     elif args.cmd == 'list_stages':
         list_available_stages(args.prefix)
+
+    # Cache Management Commands
+    elif args.cmd == 'cache':
+        from utils.cache import CacheManager, clear_all_caches, cache_stats_all
+
+        if args.action == 'clear':
+            if args.stage:
+                cache = CacheManager(args.stage)
+                count = cache.clear()
+                print(f"Cleared {count} cache entries for stage: {args.stage}")
+            else:
+                results = clear_all_caches()
+                total = sum(results.values())
+                print(f"Cleared {total} cache entries across {len(results)} stages")
+                for stage, count in sorted(results.items()):
+                    if count > 0:
+                        print(f"  {stage}: {count} files")
+
+        elif args.action == 'stats':
+            results = cache_stats_all()
+            if not results:
+                print("No cache data found")
+            else:
+                print("Cache Statistics")
+                print("=" * 50)
+                total_files = 0
+                total_mb = 0.0
+                for stage, stats in sorted(results.items()):
+                    print(f"  {stage}: {stats['file_count']} files, {stats['total_mb']:.2f} MB")
+                    total_files += stats['file_count']
+                    total_mb += stats['total_mb']
+                print("-" * 50)
+                print(f"  Total: {total_files} files, {total_mb:.2f} MB")
 
 
 def discover_stages(prefix: str = None) -> list[tuple[str, str]]:

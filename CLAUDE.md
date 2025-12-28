@@ -65,6 +65,39 @@ data_work/quality/s00_ingest_quality_20251227_143022.csv
 
 Controlled by `ENABLE_QA_REPORTS` in `src/config.py`.
 
+## Caching and Parallel Execution
+
+Pipeline stages support caching and parallel execution for faster re-runs:
+
+```bash
+# Default: caching and parallel execution enabled
+python src/pipeline.py run_estimation --all
+
+# Disable caching (force recomputation)
+python src/pipeline.py run_estimation --all --no-cache
+
+# Disable parallel execution
+python src/pipeline.py run_estimation --all --sequential
+
+# Set specific worker count
+python src/pipeline.py run_estimation --all --workers 4
+
+# Cache management
+python src/pipeline.py cache stats    # Show cache size
+python src/pipeline.py cache clear    # Clear all caches
+python src/pipeline.py cache clear -s s03_estimation  # Clear specific stage
+```
+
+**Cache location:** `data_work/.cache/<stage_name>/`
+
+**Configuration in `src/config.py`:**
+
+```python
+CACHE_ENABLED = True          # Enable/disable caching
+PARALLEL_ENABLED = True       # Enable/disable parallel execution
+PARALLEL_MAX_WORKERS = None   # Max workers (None = CPU count)
+```
+
 ## Extended Scripts Directory
 
 Exploratory analyses separate from core pipeline in `scripts/`:

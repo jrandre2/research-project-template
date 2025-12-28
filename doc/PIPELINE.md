@@ -241,6 +241,103 @@ python src/pipeline.py run_stage s00b_standardize
 
 ---
 
+## Caching and Parallel Execution
+
+The pipeline includes intelligent caching and parallel execution to dramatically improve performance during iterative development.
+
+### Performance Impact
+
+| Stage                      | Without Cache | With Cache | Improvement |
+| -------------------------- | ------------- | ---------- | ----------- |
+| s03_estimation (4 specs)   | ~3 sec        | <100ms     | ~30x        |
+| s04_robustness (10 tests)  | ~8 sec        | <300ms     | ~25x        |
+| s05_figures (5 plots)      | ~4 sec        | <500ms     | ~8x         |
+
+### How Caching Works
+
+The cache automatically tracks:
+
+1. **Data hash** - MD5 hash of input DataFrames
+2. **Configuration hash** - Hash of specification parameters
+3. **File dependencies** - Content hash of any file inputs
+
+When you re-run a stage, cached results are used if:
+
+- Input data is unchanged
+- Configuration is unchanged
+- All file dependencies are unchanged
+
+Cache files are stored in `data_work/.cache/<stage_name>/`.
+
+### CLI Flags
+
+```bash
+# Disable caching (force recomputation)
+python src/pipeline.py run_estimation --no-cache
+python src/pipeline.py estimate_robustness --no-cache
+python src/pipeline.py make_figures --no-cache
+
+# Disable parallel execution
+python src/pipeline.py run_estimation --sequential
+python src/pipeline.py estimate_robustness --sequential
+python src/pipeline.py make_figures --sequential
+
+# Control parallel workers (default: CPU count)
+python src/pipeline.py run_estimation --workers 4
+python src/pipeline.py estimate_robustness -w 2
+```
+
+### Cache Management
+
+```bash
+# View cache statistics
+python src/pipeline.py cache stats
+
+# Clear all cached data
+python src/pipeline.py cache clear
+
+# Clear a specific stage's cache
+python src/pipeline.py cache clear --stage s03_estimation
+```
+
+### When Cache Invalidates
+
+Caches automatically invalidate when:
+
+- **Data changes**: Any modification to input parquet files
+- **Config changes**: Different specification parameters
+- **Code changes**: Not automatically tracked (use `cache clear` after code changes)
+
+### Parallel Execution
+
+Parallel execution runs independent computations simultaneously:
+
+- **s03_estimation**: Multiple specifications in parallel
+- **s04_robustness**: Robustness tests in parallel by category
+- **s05_figures**: Multiple figures in parallel
+
+Uses `ProcessPoolExecutor` for CPU-bound work (estimation) and `ThreadPoolExecutor` for I/O-bound work (figures).
+
+### Configuration
+
+Global settings in `src/config.py`:
+
+```python
+CACHE_ENABLED = True           # Enable/disable caching globally
+CACHE_MAX_AGE_HOURS = 168      # Cache TTL (1 week default)
+PARALLEL_ENABLED = True        # Enable/disable parallel execution
+PARALLEL_MAX_WORKERS = None    # None = CPU count
+```
+
+### Best Practices
+
+1. **During development**: Leave caching enabled for fast iteration
+2. **After code changes**: Clear cache with `python src/pipeline.py cache clear`
+3. **For final runs**: Use `--no-cache` to ensure clean computation
+4. **Low memory systems**: Use `--sequential` to limit memory usage
+
+---
+
 ## QA Reports
 
 Each pipeline stage automatically generates quality assurance reports.

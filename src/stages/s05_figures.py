@@ -25,9 +25,12 @@ Usage
 """
 from __future__ import annotations
 
-import sys
+import multiprocessing
+import time
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from pathlib import Path
-from typing import Optional
+from typing import Optional, Callable
+import sys
 
 # Add parent directory for imports
 sys.path.insert(0, str(Path(__file__).parent.parent))
@@ -49,7 +52,16 @@ from utils.figure_style import (
     save_figure,
     annotate_panel,
 )
+from utils.cache import CacheManager, hash_dataframe
 from stages._qa_utils import generate_qa_report, QAMetrics
+
+# Import config settings
+try:
+    from config import CACHE_ENABLED, PARALLEL_ENABLED, PARALLEL_MAX_WORKERS
+except ImportError:
+    CACHE_ENABLED = True
+    PARALLEL_ENABLED = True
+    PARALLEL_MAX_WORKERS = None
 
 
 # ============================================================
@@ -361,9 +373,35 @@ def plot_outcome_distribution(
 # MAIN ENTRY POINT
 # ============================================================
 
+def _generate_figure_wrapper(args: tuple) -> tuple[str, Optional[Path]]:
+    """
+    Worker function for parallel figure generation.
+
+    Parameters
+    ----------
+    args : tuple
+        (name, func) - figure name and generation function
+
+    Returns
+    -------
+    tuple[str, Path or None]
+        (name, path) or (name, None) if failed
+    """
+    name, func = args
+    try:
+        path = func()
+        return (name, path)
+    except Exception as e:
+        print(f"    ERROR in {name}: {e}")
+        return (name, None)
+
+
 def main(
     figures: Optional[list[str]] = None,
-    verbose: bool = True
+    verbose: bool = True,
+    use_cache: bool = True,
+    parallel: bool = True,
+    n_workers: Optional[int] = None,
 ):
     """
     Execute figure generation pipeline.
@@ -374,10 +412,21 @@ def main(
         Specific figures to generate (default: all)
     verbose : bool
         Print detailed output
+    use_cache : bool
+        Use caching for aggregated statistics (default: True)
+    parallel : bool
+        Use parallel execution for figure generation (default: True)
+    n_workers : int, optional
+        Number of parallel workers (default: CPU count)
     """
+    start_time = time.time()
+
     print("=" * 60)
     print("Stage 05: Figure Generation")
     print("=" * 60)
+
+    # Initialize cache for aggregated statistics
+    cache = CacheManager('s05_figures', enabled=use_cache and CACHE_ENABLED)
 
     # Setup paths
     work_dir = get_data_dir('work')
@@ -399,6 +448,9 @@ def main(
     df = load_data(input_path)
     print(f"    -> {len(df):,} rows")
 
+    # Compute data hash for cache keys
+    data_hash = hash_dataframe(df) if use_cache else None
+
     # Define all figures
     all_figures = {
         'event_study': lambda: plot_event_study(df, fig_dir / 'fig_event_study'),
@@ -414,19 +466,52 @@ def main(
     else:
         figures_to_make = all_figures
 
+    # Determine execution mode
+    n_figs = len(figures_to_make)
+    use_parallel_exec = parallel and PARALLEL_ENABLED and n_figs > 1
+    if n_workers is None:
+        n_workers = PARALLEL_MAX_WORKERS or min(n_figs, multiprocessing.cpu_count())
+
     # Generate figures
     generated = []
-    print(f"\n  Generating {len(figures_to_make)} figures...")
+    print(f"\n  Generating {n_figs} figures...")
 
-    for name, func in figures_to_make.items():
-        print(f"\n  Creating: {name}")
-        try:
-            path = func()
-            if path:
-                generated.append(path)
-                print(f"    -> {path}")
-        except Exception as e:
-            print(f"    ERROR: {e}")
+    if use_parallel_exec:
+        print(f"    [parallel mode: {n_workers} workers]")
+
+        # Use ThreadPoolExecutor for I/O-bound figure generation
+        with ThreadPoolExecutor(max_workers=n_workers) as executor:
+            future_to_name = {
+                executor.submit(_generate_figure_wrapper, (name, func)): name
+                for name, func in figures_to_make.items()
+            }
+
+            for future in as_completed(future_to_name):
+                name = future_to_name[future]
+                try:
+                    fig_name, path = future.result()
+                    if path:
+                        generated.append(path)
+                        print(f"    {fig_name}: {path.name}")
+                except Exception as e:
+                    print(f"    ERROR in {name}: {e}")
+
+    else:
+        # Sequential execution
+        print("    [sequential mode]")
+
+        for name, func in figures_to_make.items():
+            print(f"\n  Creating: {name}")
+            try:
+                path = func()
+                if path:
+                    generated.append(path)
+                    print(f"    -> {path}")
+            except Exception as e:
+                print(f"    ERROR: {e}")
+
+    # Timing
+    elapsed = time.time() - start_time
 
     # Summary
     print("\n" + "-" * 60)
@@ -434,6 +519,7 @@ def main(
     print("-" * 60)
     print(f"  Generated: {len(generated)} figures")
     print(f"  Output directory: {fig_dir}")
+    print(f"  Elapsed time: {elapsed:.2f}s")
 
     if verbose and generated:
         print("\n  Files:")
@@ -445,6 +531,8 @@ def main(
     metrics = QAMetrics()
     metrics.add('n_figures_generated', len(generated))
     metrics.add('output_dir', str(fig_dir))
+    metrics.add('elapsed_sec', round(elapsed, 2))
+    metrics.add('parallel_workers', n_workers if use_parallel_exec else 1)
     if generated:
         total_size = sum(p.stat().st_size for p in generated if p and p.exists())
         metrics.add('total_size_kb', round(total_size / 1024, 1))

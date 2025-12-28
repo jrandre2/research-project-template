@@ -26,9 +26,12 @@ Usage
 """
 from __future__ import annotations
 
+import multiprocessing
+import time
+from concurrent.futures import ProcessPoolExecutor, as_completed
+from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Optional, Union, Literal
-from dataclasses import dataclass, field
 import sys
 
 # Add parent directory for imports
@@ -47,7 +50,16 @@ from utils.helpers import (
     format_pvalue,
     add_significance_stars,
 )
+from utils.cache import CacheManager, hash_dataframe, hash_config
 from stages._qa_utils import generate_qa_report, QAMetrics
+
+# Import config settings
+try:
+    from config import CACHE_ENABLED, PARALLEL_ENABLED, PARALLEL_MAX_WORKERS
+except ImportError:
+    CACHE_ENABLED = True
+    PARALLEL_ENABLED = True
+    PARALLEL_MAX_WORKERS = None
 
 
 # ============================================================
@@ -402,11 +414,36 @@ def run_fe_estimation(
 # MAIN ENTRY POINT
 # ============================================================
 
+def _run_single_estimation(args: tuple) -> Optional[EstimationResult]:
+    """
+    Worker function for parallel estimation.
+
+    Parameters
+    ----------
+    args : tuple
+        (df, spec_name) - DataFrame and specification name
+
+    Returns
+    -------
+    EstimationResult or None
+        Estimation result or None if failed
+    """
+    df, spec_name = args
+    try:
+        return run_fe_estimation(df, spec_name)
+    except Exception as e:
+        print(f"    ERROR in {spec_name}: {e}")
+        return None
+
+
 def main(
     specification: str = 'baseline',
     sample: str = 'full',
     run_all: bool = False,
-    verbose: bool = True
+    verbose: bool = True,
+    use_cache: bool = True,
+    parallel: bool = True,
+    n_workers: Optional[int] = None,
 ):
     """
     Execute estimation pipeline.
@@ -421,10 +458,22 @@ def main(
         Run all specifications
     verbose : bool
         Print detailed output
+    use_cache : bool
+        Use caching for intermediate results (default: True)
+    parallel : bool
+        Use parallel execution for multiple specs (default: True)
+    n_workers : int, optional
+        Number of parallel workers (default: CPU count)
     """
+    start_time = time.time()
+
     print("=" * 60)
     print("Stage 03: Estimation")
     print("=" * 60)
+
+    # Initialize cache
+    cache = CacheManager('s03_estimation', enabled=use_cache and CACHE_ENABLED)
+    cache_stats = {'hits': 0, 'misses': 0}
 
     # Setup paths
     work_dir = get_data_dir('work')
@@ -440,6 +489,9 @@ def main(
 
     df = load_data(input_path)
     print(f"    -> {len(df):,} rows, {len(df.columns)} columns")
+
+    # Compute data hash for cache keys
+    data_hash = hash_dataframe(df) if use_cache else None
 
     # Check required columns
     required = [OUTCOME_VAR, TREATMENT_VAR]
@@ -466,24 +518,104 @@ def main(
 
     # Run estimations
     results = []
-    print(f"\n  Running {len(specs_to_run)} specification(s)...")
+    n_specs = len(specs_to_run)
+    print(f"\n  Running {n_specs} specification(s)...")
 
-    for spec_name in specs_to_run:
-        spec = SPECIFICATIONS[spec_name]
-        print(f"\n  {spec['name']}:")
-        print(f"    {spec['description']}")
+    # Determine execution mode
+    use_parallel = (
+        parallel and PARALLEL_ENABLED and n_specs > 1
+    )
+    if n_workers is None:
+        n_workers = PARALLEL_MAX_WORKERS or min(n_specs, multiprocessing.cpu_count())
 
-        try:
-            result = run_fe_estimation(df, spec_name)
-            results.append(result)
+    if use_parallel and n_specs > 1:
+        print(f"    [parallel mode: {n_workers} workers]")
 
-            print(f"    Coefficient: {result.format_coefficient()}")
-            print(f"    95% CI: [{result.ci_lower:.3f}, {result.ci_upper:.3f}]")
-            print(f"    N: {result.n_obs:,}")
-            print(f"    R²: {result.r_squared:.4f}")
+        # Check cache first for all specs
+        specs_to_compute = []
+        for spec_name in specs_to_run:
+            cache_key = f"result_{spec_name}"
+            depends_on = {'data': data_hash, 'spec': hash_config(SPECIFICATIONS[spec_name])}
 
-        except Exception as e:
-            print(f"    ERROR: {e}")
+            found, cached_result = cache.get(cache_key, depends_on)
+            if found and cached_result is not None:
+                results.append(cached_result)
+                cache_stats['hits'] += 1
+                print(f"    [cache hit] {spec_name}")
+            else:
+                specs_to_compute.append(spec_name)
+                cache_stats['misses'] += 1
+
+        # Compute remaining specs in parallel
+        if specs_to_compute:
+            with ProcessPoolExecutor(max_workers=n_workers) as executor:
+                future_to_spec = {
+                    executor.submit(_run_single_estimation, (df, spec_name)): spec_name
+                    for spec_name in specs_to_compute
+                }
+
+                for future in as_completed(future_to_spec):
+                    spec_name = future_to_spec[future]
+                    try:
+                        result = future.result()
+                        if result:
+                            results.append(result)
+                            # Cache the result
+                            cache_key = f"result_{spec_name}"
+                            depends_on = {'data': data_hash, 'spec': hash_config(SPECIFICATIONS[spec_name])}
+                            cache.set(cache_key, result, depends_on)
+
+                            if verbose:
+                                print(f"    {result.specification}: coef={result.coefficient:.4f}")
+                    except Exception as e:
+                        print(f"    ERROR in {spec_name}: {e}")
+
+    else:
+        # Sequential execution
+        if use_cache:
+            print("    [sequential mode with caching]")
+        else:
+            print("    [sequential mode]")
+
+        for spec_name in specs_to_run:
+            spec = SPECIFICATIONS[spec_name]
+
+            # Try cache first
+            cache_key = f"result_{spec_name}"
+            depends_on = {'data': data_hash, 'spec': hash_config(spec)} if data_hash else None
+
+            if use_cache and depends_on:
+                found, cached_result = cache.get(cache_key, depends_on)
+                if found and cached_result is not None:
+                    results.append(cached_result)
+                    cache_stats['hits'] += 1
+                    print(f"\n  {spec['name']}: [cache hit]")
+                    print(f"    Coefficient: {cached_result.format_coefficient()}")
+                    continue
+
+            cache_stats['misses'] += 1
+            print(f"\n  {spec['name']}:")
+            print(f"    {spec['description']}")
+
+            try:
+                result = run_fe_estimation(df, spec_name)
+                results.append(result)
+
+                # Cache result
+                if use_cache and depends_on:
+                    cache.set(cache_key, result, depends_on)
+
+                print(f"    Coefficient: {result.format_coefficient()}")
+                print(f"    95% CI: [{result.ci_lower:.3f}, {result.ci_upper:.3f}]")
+                print(f"    N: {result.n_obs:,}")
+                print(f"    R²: {result.r_squared:.4f}")
+
+            except Exception as e:
+                print(f"    ERROR: {e}")
+
+    # Sort results by specification order
+    spec_order = {s: i for i, s in enumerate(specs_to_run)}
+    results.sort(key=lambda r: spec_order.get(r.specification, 999))
 
     # Save results
     if results:
@@ -499,12 +631,19 @@ def main(
 
         print(f"\n  Results saved to: {diag_dir}")
 
+    # Timing
+    elapsed = time.time() - start_time
+
     # Summary
     print("\n" + "-" * 60)
     print("ESTIMATION SUMMARY")
     print("-" * 60)
     print(f"  Specifications run: {len(results)}")
     print(f"  Sample: {sample}")
+    print(f"  Elapsed time: {elapsed:.2f}s")
+    if use_cache:
+        hit_rate = cache_stats['hits'] / (cache_stats['hits'] + cache_stats['misses']) * 100 if (cache_stats['hits'] + cache_stats['misses']) > 0 else 0
+        print(f"  Cache: {cache_stats['hits']} hits, {cache_stats['misses']} misses ({hit_rate:.0f}% hit rate)")
 
     if results:
         print("\n  Results:")
@@ -517,6 +656,10 @@ def main(
     metrics = QAMetrics()
     metrics.add('n_specifications', len(results))
     metrics.add('sample', sample)
+    metrics.add('elapsed_sec', round(elapsed, 2))
+    metrics.add('cache_hits', cache_stats['hits'])
+    metrics.add('cache_misses', cache_stats['misses'])
+    metrics.add('parallel_workers', n_workers if use_parallel else 1)
     if results:
         metrics.add('n_obs', results[0].n_obs)
         significant = sum(1 for r in results if r.p_value < 0.05)

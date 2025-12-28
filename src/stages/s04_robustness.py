@@ -25,9 +25,12 @@ Usage
 """
 from __future__ import annotations
 
-from pathlib import Path
-from typing import Optional, Literal
+import multiprocessing
+import time
+from concurrent.futures import ProcessPoolExecutor, ThreadPoolExecutor, as_completed
 from dataclasses import dataclass
+from pathlib import Path
+from typing import Optional, Literal, Callable
 import sys
 
 # Add parent directory for imports
@@ -43,7 +46,16 @@ from utils.helpers import (
     ensure_dir,
     add_significance_stars,
 )
+from utils.cache import CacheManager, hash_dataframe, hash_config
 from stages._qa_utils import generate_qa_report, QAMetrics
+
+# Import config settings
+try:
+    from config import CACHE_ENABLED, PARALLEL_ENABLED, PARALLEL_MAX_WORKERS
+except ImportError:
+    CACHE_ENABLED = True
+    PARALLEL_ENABLED = True
+    PARALLEL_MAX_WORKERS = None
 
 
 # ============================================================
@@ -338,11 +350,36 @@ def run_alternative_specs(df: pd.DataFrame) -> list[RobustnessResult]:
 # MAIN ENTRY POINT
 # ============================================================
 
+def _run_test_wrapper(args: tuple) -> list[RobustnessResult]:
+    """
+    Worker function for parallel test execution.
+
+    Parameters
+    ----------
+    args : tuple
+        (test_func, df, test_name) - function, data, and name
+
+    Returns
+    -------
+    list[RobustnessResult]
+        Test results
+    """
+    test_func, df, test_name = args
+    try:
+        return test_func(df)
+    except Exception as e:
+        print(f"    ERROR in {test_name}: {e}")
+        return []
+
+
 def main(
     run_placebos: bool = True,
     run_samples: bool = True,
     run_specs: bool = True,
-    verbose: bool = True
+    verbose: bool = True,
+    use_cache: bool = True,
+    parallel: bool = True,
+    n_workers: Optional[int] = None,
 ):
     """
     Execute robustness checks pipeline.
@@ -357,10 +394,22 @@ def main(
         Run alternative specification tests
     verbose : bool
         Print detailed output
+    use_cache : bool
+        Use caching for results (default: True)
+    parallel : bool
+        Use parallel execution for tests (default: True)
+    n_workers : int, optional
+        Number of parallel workers (default: CPU count)
     """
+    start_time = time.time()
+
     print("=" * 60)
     print("Stage 04: Robustness Checks")
     print("=" * 60)
+
+    # Initialize cache
+    cache = CacheManager('s04_robustness', enabled=use_cache and CACHE_ENABLED)
+    cache_stats = {'hits': 0, 'misses': 0}
 
     # Setup paths
     work_dir = get_data_dir('work')
@@ -379,28 +428,98 @@ def main(
     df = load_data(input_path)
     print(f"    -> {len(df):,} rows")
 
+    # Compute data hash for cache keys
+    data_hash = hash_dataframe(df) if use_cache else None
+
+    # Determine which tests to run
+    tests_to_run = []
+    if run_specs:
+        tests_to_run.append(('specs', run_alternative_specs, 'alternative specifications'))
+    if run_placebos:
+        tests_to_run.append(('placebos', run_placebo_time, 'placebo tests'))
+    if run_samples:
+        tests_to_run.append(('samples', run_sample_restrictions, 'sample restrictions'))
+
+    # Determine execution mode
+    n_tests = len(tests_to_run)
+    use_parallel = parallel and PARALLEL_ENABLED and n_tests > 1
+    if n_workers is None:
+        n_workers = PARALLEL_MAX_WORKERS or min(n_tests, multiprocessing.cpu_count())
+
     all_results = []
 
-    # Run alternative specifications
-    if run_specs:
-        print("\n  Running alternative specifications...")
-        spec_results = run_alternative_specs(df)
-        all_results.extend(spec_results)
-        print(f"    Completed {len(spec_results)} tests")
+    if use_parallel and n_tests > 1:
+        print(f"\n  Running {n_tests} test groups in parallel ({n_workers} workers)...")
 
-    # Run placebo tests
-    if run_placebos:
-        print("\n  Running placebo tests...")
-        placebo_results = run_placebo_time(df)
-        all_results.extend(placebo_results)
-        print(f"    Completed {len(placebo_results)} tests")
+        # Check cache for all test groups first
+        tests_to_compute = []
+        for test_key, test_func, test_desc in tests_to_run:
+            cache_key = f"results_{test_key}"
+            depends_on = {'data': data_hash, 'test': test_key}
 
-    # Run sample restrictions
-    if run_samples:
-        print("\n  Running sample restriction tests...")
-        sample_results = run_sample_restrictions(df)
-        all_results.extend(sample_results)
-        print(f"    Completed {len(sample_results)} tests")
+            found, cached_results = cache.get(cache_key, depends_on)
+            if found and cached_results is not None:
+                all_results.extend(cached_results)
+                cache_stats['hits'] += 1
+                print(f"    [cache hit] {test_desc}: {len(cached_results)} tests")
+            else:
+                tests_to_compute.append((test_key, test_func, test_desc))
+                cache_stats['misses'] += 1
+
+        # Run remaining tests in parallel
+        if tests_to_compute:
+            with ProcessPoolExecutor(max_workers=n_workers) as executor:
+                future_to_test = {
+                    executor.submit(_run_test_wrapper, (test_func, df, test_desc)): (test_key, test_desc)
+                    for test_key, test_func, test_desc in tests_to_compute
+                }
+
+                for future in as_completed(future_to_test):
+                    test_key, test_desc = future_to_test[future]
+                    try:
+                        results = future.result()
+                        if results:
+                            all_results.extend(results)
+                            # Cache results
+                            cache_key = f"results_{test_key}"
+                            depends_on = {'data': data_hash, 'test': test_key}
+                            cache.set(cache_key, results, depends_on)
+                            print(f"    Completed {test_desc}: {len(results)} tests")
+                    except Exception as e:
+                        print(f"    ERROR in {test_desc}: {e}")
+
+    else:
+        # Sequential execution with caching
+        mode_desc = "sequential with caching" if use_cache else "sequential"
+        print(f"\n  Running tests ({mode_desc})...")
+
+        for test_key, test_func, test_desc in tests_to_run:
+            # Check cache first
+            cache_key = f"results_{test_key}"
+            depends_on = {'data': data_hash, 'test': test_key} if data_hash else None
+
+            if use_cache and depends_on:
+                found, cached_results = cache.get(cache_key, depends_on)
+                if found and cached_results is not None:
+                    all_results.extend(cached_results)
+                    cache_stats['hits'] += 1
+                    print(f"\n  {test_desc.title()}: [cache hit] {len(cached_results)} tests")
+                    continue
+
+            cache_stats['misses'] += 1
+            print(f"\n  Running {test_desc}...")
+
+            try:
+                results = test_func(df)
+                all_results.extend(results)
+
+                # Cache results
+                if use_cache and depends_on:
+                    cache.set(cache_key, results, depends_on)
+
+                print(f"    Completed {len(results)} tests")
+            except Exception as e:
+                print(f"    ERROR: {e}")
 
     # Save results
     if all_results:
@@ -408,11 +527,18 @@ def main(
         save_diagnostic(results_df, 'robustness_results')
         print(f"\n  Results saved to: {diag_dir}")
 
+    # Timing
+    elapsed = time.time() - start_time
+
     # Summary
     print("\n" + "-" * 60)
     print("ROBUSTNESS SUMMARY")
     print("-" * 60)
     print(f"  Total tests: {len(all_results)}")
+    print(f"  Elapsed time: {elapsed:.2f}s")
+    if use_cache:
+        hit_rate = cache_stats['hits'] / (cache_stats['hits'] + cache_stats['misses']) * 100 if (cache_stats['hits'] + cache_stats['misses']) > 0 else 0
+        print(f"  Cache: {cache_stats['hits']} hits, {cache_stats['misses']} misses ({hit_rate:.0f}% hit rate)")
 
     if all_results and verbose:
         print("\n  Results:")
@@ -425,6 +551,10 @@ def main(
     # Generate QA report
     metrics = QAMetrics()
     metrics.add('n_tests', len(all_results))
+    metrics.add('elapsed_sec', round(elapsed, 2))
+    metrics.add('cache_hits', cache_stats['hits'])
+    metrics.add('cache_misses', cache_stats['misses'])
+    metrics.add('parallel_workers', n_workers if use_parallel else 1)
     if all_results:
         significant = sum(1 for r in all_results if r.p_value < 0.05)
         metrics.add('n_significant_05', significant)

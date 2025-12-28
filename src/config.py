@@ -82,6 +82,37 @@ QA_THRESHOLDS = {
 
 
 # =============================================================================
+# CACHING SETTINGS
+# =============================================================================
+
+# Enable pipeline caching for faster re-runs
+CACHE_ENABLED = True
+
+# Cache directory (relative to DATA_WORK_DIR)
+CACHE_DIR = DATA_WORK_DIR / '.cache'
+
+# Maximum cache age in hours before automatic invalidation
+CACHE_MAX_AGE_HOURS = 168  # 1 week
+
+# Use compression for large cached objects
+CACHE_COMPRESSION = False
+
+
+# =============================================================================
+# PARALLEL EXECUTION SETTINGS
+# =============================================================================
+
+# Enable parallel execution within stages
+PARALLEL_ENABLED = True
+
+# Maximum number of parallel workers (None = use CPU count)
+PARALLEL_MAX_WORKERS = None
+
+# Stages that support parallel execution
+PARALLEL_STAGES = ['s03_estimation', 's04_robustness', 's05_figures']
+
+
+# =============================================================================
 # PIPELINE SETTINGS
 # =============================================================================
 
@@ -191,7 +222,7 @@ def validate_config() -> bool:
 
 def ensure_directories() -> None:
     """Create required directories if they don't exist."""
-    for path in [DATA_RAW_DIR, DATA_WORK_DIR, DIAGNOSTICS_DIR, FIGURES_DIR, QA_REPORTS_DIR]:
+    for path in [DATA_RAW_DIR, DATA_WORK_DIR, DIAGNOSTICS_DIR, FIGURES_DIR, QA_REPORTS_DIR, CACHE_DIR]:
         path.mkdir(parents=True, exist_ok=True)
 
 
