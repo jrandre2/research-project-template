@@ -13,7 +13,7 @@
 [![License: PolyForm Noncommercial 1.0.0](https://img.shields.io/badge/License-PolyForm%20Noncommercial%201.0.0-blue.svg)](https://polyformproject.org/licenses/noncommercial/1.0.0)
 [![Docs License: CC BY-NC 4.0](https://img.shields.io/badge/Docs%20License-CC%20BY--NC%204.0-lightgrey.svg)](https://creativecommons.org/licenses/by-nc/4.0/)
 
-Workflow platform for building research pipelines, validating manuscripts, and migrating legacy projects into a standardized structure. This repository provides the platform and scaffold, not a project-specific analysis.
+Workflow platform for building research pipelines, validating manuscripts, and migrating legacy projects into a standardized structure. This repository provides a complete research workflow platform, not a project-specific analysis.
 
 Licensing: code is PolyForm Noncommercial 1.0.0 and documentation/manuscript content is CC BY-NC 4.0.
 
@@ -70,7 +70,7 @@ See `demo/README.md` for a small sample dataset and expected outputs that exerci
 
 ### Quick Start Steps
 
-1. Copy or fork this repository as the starting scaffold for a new project
+1. Copy or fork this repository as the starting point for a new project
 2. Update `CLAUDE.md`, `README.md`, and `doc/` to reflect the new project
 3. Configure stage constants in `src/stages/` and define variables in `doc/DATA_DICTIONARY.md`
 4. Add raw data to `data_raw/` and run the pipeline

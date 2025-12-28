@@ -4,7 +4,7 @@ This guide explains how to adapt CENTAUR to your specific research project.
 
 ## Overview
 
-The platform scaffold is designed with clear extension points. Most customizations involve:
+The platform is designed with clear extension points. Most customizations involve:
 
 1. Modifying configuration values
 2. Adding project-specific variables

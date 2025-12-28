@@ -1,7 +1,7 @@
 # Documentation Index
 
 **Project**: CENTAUR (Computational Environment for Navigating Tasks in Automated University Research)
-**Scope**: Platform, scaffold, and workflow tools (not project-specific analysis)
+**Scope**: Research workflow platform (not project-specific analysis)
 **Last Updated**: 2025-12-27
 
 ---
@@ -47,7 +47,7 @@ Start here based on your situation:
 | Document | Purpose |
 |----------|---------|
 | [TUTORIAL.md](TUTORIAL.md) | Getting started with demo data |
-| [CUSTOMIZATION.md](CUSTOMIZATION.md) | Adapting platform scaffold to your project |
+| [CUSTOMIZATION.md](CUSTOMIZATION.md) | Adapting the platform to your project |
 | [MANUSCRIPT_VARIANTS.md](MANUSCRIPT_VARIANTS.md) | Managing divergent manuscript drafts |
 | [REPRODUCTION.md](REPRODUCTION.md) | Running analysis from scratch |
 | [ANALYSIS_JOURNEY.md](ANALYSIS_JOURNEY.md) | Research process documentation template |

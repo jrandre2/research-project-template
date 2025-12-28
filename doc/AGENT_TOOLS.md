@@ -228,7 +228,7 @@ print(report.to_markdown())
 
 - **Dry-run mode**: Preview changes without executing
 - **Step-by-step progress**: Verbose output shows each step
-- **Scaffold generation**: Creates merge instructions for code
+- **Starter file generation**: Creates merge instructions for code
 - **Documentation templates**: Generates DATA_DICTIONARY.md, etc.
 - **Verification**: Checks imports, runs tests, validates docs
 
@@ -318,7 +318,7 @@ def _verify_custom(self) -> ExecutionResult:
    python src/pipeline.py migrate_project --path /source --target /target --dry-run
    ```
 
-2. **Review scaffold files** - Generated stage files contain merge instructions, not actual code
+2. **Review generated files** - Generated stage files contain merge instructions, not actual code
 
 3. **Check warnings** - Migration plans include warnings for edge cases (notebooks, unmapped modules)
 
@@ -326,7 +326,7 @@ def _verify_custom(self) -> ExecutionResult:
 
 5. **Keep source intact** - Migration copies files, never modifies the source project
 
-6. **Complete manually** - After migration, manually merge code into scaffold files
+6. **Complete manually** - After migration, manually merge code into generated stage files
 
 ---
 
@@ -346,8 +346,9 @@ Modules without recognized keywords go to unmapped. Options:
 
 ### Verification failures
 
-Expected for scaffold files. After migration:
-1. Complete scaffold files with actual code
+Expected for generated files. After migration:
+
+1. Complete generated stage files with actual code
 2. Create missing documentation
 3. Re-run verification manually
 

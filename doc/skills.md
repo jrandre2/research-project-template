@@ -673,5 +673,5 @@ python src/pipeline.py migrate_project --path /source --target /target
 1. Run with `--dry-run` first to preview changes
 2. Execute without `--dry-run` to perform migration
 3. Review `MIGRATION_REPORT.md` for verification status
-4. Complete scaffold files by merging source code manually
+4. Complete generated stage files by merging source code manually
 5. Run verification steps to ensure completeness
