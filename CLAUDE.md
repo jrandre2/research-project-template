@@ -13,7 +13,7 @@ source .venv/bin/activate  # REQUIRED for all scripts
 ### Common Commands
 
 ```bash
-# Pipeline stages
+# Pipeline stages (use --demo if data_raw/ is empty)
 python src/pipeline.py ingest_data
 python src/pipeline.py run_estimation --specification baseline
 python src/pipeline.py make_figures

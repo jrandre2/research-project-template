@@ -105,7 +105,12 @@ def parse_args() -> argparse.Namespace:
     sub = p.add_subparsers(dest='cmd', required=True)
 
     # Data Processing Commands
-    sub.add_parser('ingest_data', help='Load and preprocess raw data')
+    p_ingest = sub.add_parser('ingest_data', help='Load and preprocess raw data')
+    p_ingest.add_argument(
+        '--demo',
+        action='store_true',
+        help='Use synthetic demo data instead of real data'
+    )
     sub.add_parser('link_records', help='Link records across data sources')
     sub.add_parser('build_panel', help='Create analysis panel')
 
@@ -377,7 +382,7 @@ def main():
 
     if args.cmd == 'ingest_data':
         from stages import s00_ingest
-        s00_ingest.main()
+        s00_ingest.main(use_demo=args.demo)
 
     elif args.cmd == 'link_records':
         from stages import s01_link

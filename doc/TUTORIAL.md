@@ -1,6 +1,6 @@
 # Tutorial: Getting Started
 
-This tutorial walks through setting up and running the research pipeline from scratch using platform defaults. Synthetic demo data is generated automatically when `data_raw/` has no matching input files.
+This tutorial walks through setting up and running the research pipeline from scratch using platform defaults. Use the `--demo` flag to generate synthetic data for testing.
 
 ## Prerequisites
 
@@ -47,10 +47,10 @@ The pipeline creates `data_work/` and `manuscript_quarto/figures/` if missing. U
 
 ### 2.1 Using Synthetic Demo Data
 
-If `data_raw/` is empty (no matching CSV/Parquet/Excel files), `ingest_data` generates synthetic demo data automatically:
+To generate synthetic demo data for testing, use the `--demo` flag:
 
 ```bash
-python src/pipeline.py ingest_data
+python src/pipeline.py ingest_data --demo
 ```
 
 This creates `data_work/data_raw.parquet` with:
@@ -307,13 +307,13 @@ The audit tracks:
 
 ## Complete Workflow
 
-Run the entire pipeline:
+Run the entire pipeline (assumes data exists in `data_raw/`, or use `--demo`):
 
 ```bash
 # Activate environment
 source .venv/bin/activate
 
-# Run all stages
+# Run all stages (add --demo to ingest_data if data_raw/ is empty)
 python src/pipeline.py ingest_data
 python src/pipeline.py link_records
 python src/pipeline.py build_panel
@@ -338,6 +338,7 @@ source .venv/bin/activate
 
 echo "Running research pipeline..."
 
+# Add --demo flag if data_raw/ is empty
 python src/pipeline.py ingest_data
 python src/pipeline.py link_records
 python src/pipeline.py build_panel

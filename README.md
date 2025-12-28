@@ -37,8 +37,8 @@ python -m venv .venv
 source .venv/bin/activate
 pip install -r requirements.txt
 
-# Run the pipeline (ingest_data generates synthetic demo data if data_raw/ is empty)
-python src/pipeline.py ingest_data
+# Run the pipeline (use --demo for synthetic data, or add real data to data_raw/)
+python src/pipeline.py ingest_data --demo
 python src/pipeline.py link_records
 python src/pipeline.py build_panel
 python src/pipeline.py run_estimation --specification baseline
@@ -131,7 +131,7 @@ See `demo/README.md` for a small sample dataset and expected outputs that exerci
 
 | Command | Purpose |
 |---------|---------|
-| `python src/pipeline.py ingest_data` | Load raw data or generate demo data |
+| `python src/pipeline.py ingest_data` | Load raw data (fails if empty; use `--demo` for synthetic data) |
 | `python src/pipeline.py link_records` | Link data sources |
 | `python src/pipeline.py build_panel` | Create analysis panel |
 | `python src/pipeline.py run_estimation --specification baseline` | Run estimation |

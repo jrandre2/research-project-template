@@ -11,7 +11,7 @@
 ```bash
 source .venv/bin/activate
 
-# Full pipeline
+# Full pipeline (use --demo if data_raw/ is empty)
 python src/pipeline.py ingest_data
 python src/pipeline.py link_records
 python src/pipeline.py build_panel
@@ -28,7 +28,7 @@ python src/pipeline.py run_stage s00_ingest       # Run specific stage
 cd manuscript_quarto && ./render_all.sh
 ```
 
-Note: `ingest_data` generates synthetic demo data if `data_raw/` has no matching files.
+Note: `ingest_data` requires data in `data_raw/`. Use `--demo` flag to generate synthetic demo data.
 
 Journal validation is optional. If no journal config is set, skip `validate_submission` and render with Quarto only. When a journal config exists, `validate_submission` checks word count (when configured), abstract length, required sections, figure formats, and bibliography/citation presence.
 
@@ -65,7 +65,7 @@ data_raw/ ──► ingest_data ──► data_work/data_raw.parquet
 
 **Command:** `python src/pipeline.py ingest_data`
 
-**Purpose:** Load and preprocess raw data files. Generates synthetic demo data if no inputs exist in `data_raw/`.
+**Purpose:** Load and preprocess raw data files. Use `--demo` flag to generate synthetic data if `data_raw/` is empty.
 
 **Input:** `data_raw/`
 **Output:** `data_work/data_raw.parquet`
@@ -319,6 +319,7 @@ python src/pipeline.py audit_data --full --report
 
 ```bash
 source .venv/bin/activate
+# Add --demo to ingest_data if using synthetic data
 python src/pipeline.py ingest_data
 python src/pipeline.py link_records
 python src/pipeline.py build_panel

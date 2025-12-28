@@ -323,13 +323,22 @@ def main(
     # Find input files
     input_files = find_input_files(raw_dir)
 
-    if use_demo or not input_files:
-        if not input_files:
-            print("\n  No raw data files found in data_raw/")
+    # Determine data source
+    if use_demo:
+        print("\n" + "!" * 60)
+        print("!  WARNING: Using synthetic demo data (--demo flag)")
+        print("!" * 60)
         df = generate_demo_data()
+        data_source = 'synthetic'
+    elif not input_files:
+        print("\nERROR: No raw data files found in data_raw/")
+        print("  To use synthetic demo data, run with --demo flag:")
+        print("    python src/pipeline.py ingest_data --demo")
+        sys.exit(1)
     else:
         print(f"\n  Found {len(input_files)} input file(s)")
         df = load_all_sources(input_files)
+        data_source = 'real'
 
     # Clean data
     df = clean_data(df)
@@ -349,6 +358,7 @@ def main(
     print("\n" + "-" * 60)
     print("SUMMARY")
     print("-" * 60)
+    print(f"  Data source: {data_source}")
     print(f"  Rows: {len(df):,}")
     print(f"  Columns: {len(df.columns)}")
     print(f"  Output: {output_path}")
@@ -360,7 +370,12 @@ def main(
             print(f"    - {col}: {df[col].dtype}")
 
     # Generate QA report
-    qa_for_stage('s00_ingest', df, output_file=str(output_path))
+    qa_for_stage(
+        's00_ingest',
+        df,
+        additional_metrics={'data_source': data_source},
+        output_file=str(output_path)
+    )
 
     print("\n" + "=" * 60)
     print("Stage 00 complete.")

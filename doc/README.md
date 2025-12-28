@@ -68,7 +68,7 @@
 ### Data Processing
 
 ```bash
-python src/pipeline.py ingest_data     # Load raw data (or generate demo data if empty)
+python src/pipeline.py ingest_data     # Load raw data (use --demo for synthetic data)
 python src/pipeline.py link_records    # Link data sources
 python src/pipeline.py build_panel     # Construct panel
 ```
