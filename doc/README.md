@@ -6,6 +6,21 @@
 
 ---
 
+## New to CENTAUR?
+
+Start here based on your situation:
+
+| I have... | Start here |
+|-----------|------------|
+| Nothing yet, want to explore | [GETTING_STARTED.md](GETTING_STARTED.md) → Demo Walkthrough |
+| Data files ready for analysis | [GETTING_STARTED.md](GETTING_STARTED.md) → Data-First Workflow |
+| Manuscript draft, no data yet | [GETTING_STARTED.md](GETTING_STARTED.md) → Manuscript-First Workflow |
+| Both data and manuscript | [GETTING_STARTED.md](GETTING_STARTED.md) → Integration Workflow |
+| Existing analysis codebase | [AGENT_TOOLS.md](AGENT_TOOLS.md) → Migration Tools |
+| Need step-by-step setup | [NEW_PROJECT_CHECKLIST.md](NEW_PROJECT_CHECKLIST.md) |
+
+---
+
 ## Quick Start
 
 | Document | Location | Purpose |

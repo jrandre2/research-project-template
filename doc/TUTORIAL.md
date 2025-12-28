@@ -2,6 +2,12 @@
 
 This tutorial walks through setting up and running the research pipeline from scratch using platform defaults. Use the `--demo` flag to generate synthetic data for testing.
 
+**Related guides:**
+
+- [GETTING_STARTED.md](GETTING_STARTED.md) - Scenario-based entry points (data-first, manuscript-first, etc.)
+- [NEW_PROJECT_CHECKLIST.md](NEW_PROJECT_CHECKLIST.md) - Pre-flight and customization checklist
+- [CUSTOMIZATION.md](CUSTOMIZATION.md) - Adapting stages for your specific data
+
 ## Prerequisites
 
 - Python 3.10+

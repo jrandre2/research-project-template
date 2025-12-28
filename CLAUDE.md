@@ -10,6 +10,8 @@ source .venv/bin/activate  # REQUIRED for all scripts
 
 **Full documentation:** See `doc/README.md` for complete index.
 
+**Starting a new project?** See `doc/GETTING_STARTED.md` for scenario-based guidance.
+
 ### Common Commands
 
 ```bash

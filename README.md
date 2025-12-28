@@ -55,11 +55,22 @@ See `demo/README.md` for a small sample dataset and expected outputs that exerci
 
 ## Using This Platform for a New Project
 
-1. Copy or fork this repository as the starting scaffold for a new project.
-2. Update `CLAUDE.md`, `README.md`, and `doc/` to reflect the new project.
-3. Configure stage constants in `src/stages/` and define variables in `doc/DATA_DICTIONARY.md`.
-4. Add raw data to `data_raw/` and run the pipeline.
-5. Customize journal profiles in `manuscript_quarto/journal_configs/` and write the manuscript.
+**New users:** See [doc/GETTING_STARTED.md](doc/GETTING_STARTED.md) for scenario-based guidance.
+
+### Fork vs. Copy
+
+- **Fork** if you plan to contribute improvements back to CENTAUR, or want to pull future updates
+- **Copy** (clone + remove `.git`) if you want a completely independent project with fresh git history
+
+### Quick Start Steps
+
+1. Copy or fork this repository as the starting scaffold for a new project
+2. Update `CLAUDE.md`, `README.md`, and `doc/` to reflect the new project
+3. Configure stage constants in `src/stages/` and define variables in `doc/DATA_DICTIONARY.md`
+4. Add raw data to `data_raw/` and run the pipeline
+5. Customize journal profiles in `manuscript_quarto/journal_configs/` and write the manuscript
+
+**Detailed checklist:** See [doc/NEW_PROJECT_CHECKLIST.md](doc/NEW_PROJECT_CHECKLIST.md) for step-by-step setup.
 
 ## Project Structure
 
