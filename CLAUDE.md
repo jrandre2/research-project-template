@@ -208,3 +208,4 @@ See `doc/skills.md` for full command reference.
 | Skills and actions | `doc/skills.md` |
 | Statistical methods | `doc/METHODOLOGY.md` |
 | Troubleshooting | `doc/agents.md` |
+| Multilanguage support (planned) | `doc/design/MULTILANGUAGE_ANALYSIS.md` |

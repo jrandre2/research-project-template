@@ -153,6 +153,7 @@ Future feature specifications and roadmap documents.
 
 | Document | Purpose |
 |----------|---------|
+| [design/MULTILANGUAGE_ANALYSIS.md](design/MULTILANGUAGE_ANALYSIS.md) | R, Stata, Julia analysis engine support |
 | [design/QUALITATIVE_MODULE.md](design/QUALITATIVE_MODULE.md) | Qualitative & mixed methods module design |
 | [design/GEOSPATIAL_MODULE.md](design/GEOSPATIAL_MODULE.md) | Geospatial analysis & spatial econometrics design |
 

@@ -26,6 +26,8 @@ Licensing: code is PolyForm Noncommercial 1.0.0 and documentation/manuscript con
 - Project migration tools for onboarding legacy codebases
 - Data audit utilities for sample attrition and diagnostics
 
+**Planned:** Multilanguage analysis support (R, Stata, Julia) - see [doc/design/MULTILANGUAGE_ANALYSIS.md](doc/design/MULTILANGUAGE_ANALYSIS.md)
+
 ## Workflow Notes
 
 Journal configuration is optional. If you have not set a journal config yet, skip `validate_submission` and render with Quarto only. When a journal config is available, `validate_submission` checks word count (when configured), abstract length, required sections, figure formats, and bibliography/citation presence.
