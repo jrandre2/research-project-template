@@ -147,6 +147,17 @@ Parsing is heuristic; review the generated YAML for completeness.
 
 ---
 
+## Design Documents
+
+Future feature specifications and roadmap documents.
+
+| Document | Purpose |
+|----------|---------|
+| [design/QUALITATIVE_MODULE.md](design/QUALITATIVE_MODULE.md) | Qualitative & mixed methods module design |
+| [design/GEOSPATIAL_MODULE.md](design/GEOSPATIAL_MODULE.md) | Geospatial analysis & spatial econometrics design |
+
+---
+
 ## Testing
 
 | Document | Purpose |
