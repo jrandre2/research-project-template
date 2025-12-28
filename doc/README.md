@@ -147,6 +147,16 @@ Parsing is heuristic; review the generated YAML for completeness.
 
 ---
 
+## Testing
+
+| Document | Purpose |
+|----------|---------|
+| [TESTING.md](TESTING.md) | Test structure, conventions, and examples |
+| [TROUBLESHOOTING.md](TROUBLESHOOTING.md) | Common errors and solutions |
+| [STAGE_DEVELOPMENT.md](STAGE_DEVELOPMENT.md) | How to create and extend pipeline stages |
+
+---
+
 ## Source Code
 
 | Directory | Purpose |

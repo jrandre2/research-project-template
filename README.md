@@ -1,5 +1,7 @@
 <p align="center">
   <img src="assets/centaur_logo.png?v=3" alt="CENTAUR Logo" width="400">
+  <br>
+  <em><strong>Research, Unbridled</strong></em>
 </p>
 
 # CENTAUR
