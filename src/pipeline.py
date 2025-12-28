@@ -86,7 +86,15 @@ import argparse
 
 
 def ensure_env():
-    """Verify virtual environment is activated."""
+    """Verify virtual environment is activated.
+
+    Skips check in CI environments (GitHub Actions, etc.) where dependencies
+    are installed globally.
+    """
+    # Skip venv check in CI environments
+    if os.getenv('CI') or os.getenv('GITHUB_ACTIONS'):
+        return
+
     venv = os.getenv('VIRTUAL_ENV')
     if not venv or not venv.endswith('/.venv'):
         print(
