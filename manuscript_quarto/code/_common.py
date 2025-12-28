@@ -17,16 +17,51 @@ def show_table(df: pd.DataFrame) -> None:
     display(Markdown(df.to_markdown(index=False)))
 
 
-# Paths relative to manuscript_quarto/
-DATA_DIR = Path(__file__).parent.parent / "data"
-FIG_DIR = Path(__file__).parent.parent / "figures"
+def _find_project_root() -> Path:
+    """Find project root by looking for characteristic files."""
+    current = Path(__file__).resolve()
+    for parent in current.parents:
+        if (parent / 'src').exists() and (parent / 'manuscript_quarto').exists():
+            return parent
+    # Fallback: assume manuscript_quarto is one level down from root
+    return Path(__file__).parent.parent.parent
 
 
-def load_diagnostic(name: str) -> pd.DataFrame:
-    """Load a diagnostic CSV file by name (without .csv extension)."""
+# Project paths
+PROJECT_ROOT = _find_project_root()
+DATA_DIR = PROJECT_ROOT / "data_work" / "diagnostics"
+FIG_DIR = PROJECT_ROOT / "manuscript_quarto" / "figures"
+
+
+def data_available() -> bool:
+    """Check if pipeline data is available for manuscript rendering."""
+    return DATA_DIR.exists() and any(DATA_DIR.glob("*.csv"))
+
+
+def load_diagnostic(name: str, required: bool = True) -> pd.DataFrame:
+    """Load a diagnostic CSV file by name (without .csv extension).
+
+    Parameters
+    ----------
+    name : str
+        Name of the diagnostic file (without .csv extension)
+    required : bool
+        If True, raise error when file missing. If False, return empty DataFrame.
+
+    Returns
+    -------
+    pd.DataFrame
+        Loaded data, or empty DataFrame if not required and missing
+    """
     path = DATA_DIR / f"{name}.csv"
     if not path.exists():
-        raise FileNotFoundError(f"Diagnostic file not found: {path}")
+        if required:
+            raise FileNotFoundError(
+                f"Diagnostic file not found: {path}\n"
+                f"Run the pipeline first: python src/pipeline.py ingest_data --demo && "
+                f"python src/pipeline.py run_estimation"
+            )
+        return pd.DataFrame()
     return pd.read_csv(path)
 
 

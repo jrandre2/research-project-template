@@ -46,10 +46,15 @@ def find_manuscript_root(start: Path) -> Path:
 
 MANUSCRIPT_ROOT = find_manuscript_root(Path.cwd())
 sys.path.insert(0, str(MANUSCRIPT_ROOT / "code"))
-from _common import load_diagnostic, show_table, format_pvalue, format_ci, add_significance_stars
+from _common import (
+    load_diagnostic, show_table, format_pvalue, format_ci,
+    add_significance_stars, data_available, DATA_DIR, FIG_DIR
+)
 
-DATA_DIR = MANUSCRIPT_ROOT / "data"
-FIG_DIR = MANUSCRIPT_ROOT / "figures"
+# Check if pipeline data is available
+PIPELINE_DATA_READY = data_available()
+if not PIPELINE_DATA_READY:
+    print("Note: Pipeline data not yet available. Run the pipeline to generate results.")
 ```
 
 # Introduction {#sec-introduction}

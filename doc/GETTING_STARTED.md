@@ -151,6 +151,8 @@ Edit `manuscript_quarto/index.qmd` with your content. Figures are automatically 
 **You have:** A manuscript outline or draft
 **You need:** To integrate data analysis later
 
+The manuscript template is designed to work before pipeline data exists. Code blocks that load data will show a note about missing data but won't fail.
+
 ### Step 1: Set Up Your Project
 
 ```bash
@@ -194,18 +196,18 @@ author: "Your Name"
 [Your conclusion here]
 ```
 
-### Step 3: Set Up Figure Placeholders
+### Step 3: Set Up Figure Placeholders (Optional)
 
-Create placeholder files in `manuscript_quarto/figures/` so your manuscript renders:
+If you reference figures in your manuscript, you can create placeholders so images render:
 
 ```bash
-# Create simple placeholder images
+# Create simple placeholder images (requires ImageMagick)
 convert -size 800x600 xc:lightgray -gravity center \
   -annotate +0+0 'Event Study\n(pending data)' \
   manuscript_quarto/figures/fig_event_study.png
 ```
 
-Or just note in your manuscript: `<!-- TODO: Generate from pipeline -->`
+Alternatively, use HTML comments as placeholders: `<!-- TODO: Figure from pipeline -->`
 
 ### Step 4: Render Your Draft
 
