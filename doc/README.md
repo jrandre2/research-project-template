@@ -192,6 +192,8 @@ Future feature specifications and roadmap documents.
 | `utils/validation.py` | Data validation framework |
 | `utils/figure_style.py` | Matplotlib styling |
 | `utils/synthetic_data.py` | Demo data generation |
+| `utils/spatial_cv.py` | Spatial cross-validation grouping |
+| `utils/cache.py` | Result caching utilities |
 
 ---
 

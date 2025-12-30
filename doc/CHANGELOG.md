@@ -4,6 +4,15 @@ All notable changes to this project are documented in this file.
 
 ---
 
+## [2025-12-30] - Documentation Review
+
+### Updated
+
+- **doc/METHODOLOGY.md**: Fixed placeholder date
+- **doc/README.md**: Added missing utilities (`spatial_cv.py`, `cache.py`) to source code table
+
+---
+
 ## [2025-12-29] - Spatial Cross-Validation and ML Model Expansion
 
 ### Added
