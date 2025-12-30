@@ -130,6 +130,34 @@ data_raw/ ──► ingest_data ──► data_work/data_raw.parquet
 
 **Implementation:** `src/stages/s04_robustness.py`
 
+**Extended Robustness Tests (when applicable):**
+
+The robustness stage includes additional tests for geographic and ML-based analyses:
+
+| Test | Description | When to Use |
+|------|-------------|-------------|
+| Spatial vs Random CV | Compare spatial and random cross-validation to quantify geographic data leakage | Data with latitude/longitude coordinates |
+| Feature Ablation | Test model performance with feature subsets | Multiple feature groups |
+| Tuned Models | Nested CV with hyperparameter tuning for Ridge, ElasticNet, RF, GB | ML prediction tasks |
+| Encoding Comparisons | Compare categorical vs ordinal treatment encoding | Categorical treatment variables |
+
+**Usage with spatial CV:**
+
+```python
+from stages.s04_robustness import run_spatial_cv_comparison, run_feature_ablation
+
+# Compare spatial vs random CV
+results = run_spatial_cv_comparison(
+    df, feature_cols=['feature_1', 'feature_2'],
+    lat_col='latitude', lon_col='longitude'
+)
+
+# Feature ablation study
+results = run_feature_ablation(df, feature_cols)
+```
+
+See [Spatial Cross-Validation](#spatial-cross-validation) section below for methodology details.
+
 ---
 
 ### Stage 05: Figure Generation
@@ -526,6 +554,78 @@ python src/pipeline.py make_figures
 ```bash
 python src/pipeline.py make_figures
 cd manuscript_quarto && ./render_all.sh
+```
+
+---
+
+## Spatial Cross-Validation
+
+When working with geographic data, standard k-fold cross-validation can produce overly optimistic performance estimates due to spatial autocorrelation. The spatial CV module provides tools to address this.
+
+### Why Spatial CV?
+
+Geographic observations that are close to each other tend to be similar (spatial autocorrelation). Standard CV randomly assigns observations to folds, which can:
+
+- Put nearby observations in both training and test sets
+- Allow information to "leak" from training to test
+- Produce inflated performance metrics
+
+Spatial CV ensures geographic separation between training and test sets.
+
+### Spatial CV Usage
+
+```python
+from src.utils.spatial_cv import SpatialCVManager, compare_spatial_vs_random_cv
+
+# Create spatial groups
+manager = SpatialCVManager(n_groups=5, method='kmeans')
+groups = manager.create_groups_from_coordinates(df['latitude'], df['longitude'])
+
+# Cross-validate with spatial groups
+from sklearn.linear_model import Ridge
+model = Ridge(alpha=1.0)
+results = manager.cross_validate(model, X, y)
+print(f"Spatial CV R2: {results['mean']:.3f} +/- {results['std']:.3f}")
+
+# Quantify leakage
+comparison = manager.compare_to_random_cv(model, X, y)
+print(f"Random CV:  {comparison['random_cv']['mean']:.3f}")
+print(f"Spatial CV: {comparison['spatial_cv']['mean']:.3f}")
+print(f"Leakage:    {comparison['leakage']:.3f}")
+```
+
+### Grouping Methods
+
+| Method | Description | Requirements |
+| ------ | ----------- | ------------ |
+| `kmeans` | K-means clustering on coordinates | lat/lon |
+| `balanced_kmeans` | K-means with balanced group sizes | lat/lon |
+| `geographic_bands` | Latitude-based horizontal bands | lat/lon |
+| `longitude_bands` | Longitude-based vertical bands | lat/lon |
+| `spatial_blocks` | Grid-based spatial blocks | lat/lon |
+| `zip_digit` | ZIP code digit-based grouping | zip codes |
+| `contiguity_queen` | Polygon contiguity (shared edges/vertices) | geopandas |
+| `contiguity_rook` | Polygon contiguity (shared edges only) | geopandas |
+
+### Spatial CV Configuration
+
+Settings in `src/config.py`:
+
+```python
+SPATIAL_CV_N_GROUPS = 5          # Number of spatial folds
+SPATIAL_GROUPING_METHOD = 'kmeans'  # Default method
+SPATIAL_SENSITIVITY_METHODS = [   # Methods for sensitivity analysis
+    'kmeans', 'balanced_kmeans', 'geographic_bands',
+    'longitude_bands', 'spatial_blocks'
+]
+```
+
+### Optional Dependencies
+
+Contiguity-based methods require geopandas:
+
+```bash
+pip install -r requirements-spatial.txt
 ```
 
 ---

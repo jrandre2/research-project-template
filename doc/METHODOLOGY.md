@@ -269,6 +269,74 @@ def clustered_se(residuals, X, cluster_ids):
 
 ---
 
+## Spatial Cross-Validation
+
+### The Problem: Spatial Data Leakage
+
+When data has geographic structure, standard random cross-validation can leak information between training and test sets due to spatial autocorrelation. Nearby observations are often similar, so a model trained on neighbors of test points can appear to generalize better than it actually does.
+
+### Solution: Spatial Grouping
+
+Group observations by geographic proximity before cross-validation:
+
+```python
+from utils.spatial_cv import SpatialCVManager
+
+# Create spatial groups
+manager = SpatialCVManager(n_groups=5, method='kmeans')
+groups = manager.create_groups_from_coordinates(
+    df['latitude'].values,
+    df['longitude'].values
+)
+
+# Cross-validate with spatial separation
+results = manager.cross_validate(model, X, y)
+```
+
+### Available Grouping Methods
+
+| Method | Description | Use Case |
+|--------|-------------|----------|
+| `kmeans` | K-means clustering on coordinates | General geographic clustering |
+| `balanced_kmeans` | K-means with balanced group sizes | Even fold sizes |
+| `geographic_bands` | Latitude-based bands | N-S spatial structure |
+| `longitude_bands` | Longitude-based bands | E-W spatial structure |
+| `spatial_blocks` | Grid-based blocks | Regular spatial grids |
+| `zip_digit` | ZIP code digit grouping | Administrative boundaries |
+| `contiguity_queen` | Queen contiguity (requires geopandas) | Polygon data |
+| `contiguity_rook` | Rook contiguity (requires geopandas) | Polygon data |
+
+### Quantifying Leakage
+
+Compare spatial CV to random CV to measure potential leakage:
+
+```python
+comparison = manager.compare_to_random_cv(model, X, y)
+print(f"Leakage estimate: {comparison['leakage_pct']:.1f}%")
+```
+
+A large gap between random CV performance and spatial CV performance indicates that the model may be exploiting spatial correlation rather than learning generalizable patterns.
+
+### When to Use Spatial CV
+
+- Studies with geographic data (county, zip code, coordinates)
+- Environmental or climate research
+- Urban economics and real estate
+- Epidemiological studies
+- Any analysis where spatial autocorrelation is expected
+
+### Configuration
+
+Configure in `src/config.py`:
+
+```python
+SPATIAL_CV_N_GROUPS = 5
+SPATIAL_GROUPING_METHOD = 'kmeans'
+SPATIAL_SENSITIVITY_METHODS = ['kmeans', 'balanced_kmeans', 'geographic_bands']
+```
+
+---
+
 ## Robustness Checks
 
 ### Specification Robustness

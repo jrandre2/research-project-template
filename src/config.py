@@ -119,6 +119,79 @@ PARALLEL_STAGES = ['s03_estimation', 's04_robustness', 's05_figures']
 
 
 # =============================================================================
+# SPATIAL CROSS-VALIDATION SETTINGS (Optional)
+# =============================================================================
+
+# Number of spatial groups for cross-validation
+SPATIAL_CV_N_GROUPS = 5
+
+# Default grouping method
+# Options: 'kmeans', 'balanced_kmeans', 'geographic_bands', 'longitude_bands',
+#          'spatial_blocks', 'zip_digit', 'contiguity_queen', 'contiguity_rook'
+# Note: contiguity methods require geopandas
+SPATIAL_GROUPING_METHOD = 'kmeans'
+
+# Methods to test for spatial sensitivity analysis
+SPATIAL_SENSITIVITY_METHODS = [
+    'kmeans',
+    'balanced_kmeans',
+    'geographic_bands',
+    'longitude_bands',
+    'spatial_blocks',
+]
+
+# Random state for spatial grouping reproducibility
+RANDOM_STATE = 42
+
+
+# =============================================================================
+# ML MODEL HYPERPARAMETER GRIDS (for tuning)
+# =============================================================================
+
+# Ridge regression alpha values
+TUNING_RIDGE_ALPHAS = [0.1, 1.0, 10.0, 100.0]
+
+# ElasticNet parameters
+TUNING_ENET_ALPHAS = [0.01, 0.1, 1.0, 10.0]
+TUNING_ENET_L1_RATIOS = [0.1, 0.5, 0.9]
+
+# Random Forest parameters
+TUNING_RF_PARAMS = {
+    'n_estimators': [100, 200],
+    'max_depth': [10, 20, None],
+    'min_samples_split': [2, 5],
+}
+
+# Extra Trees parameters
+TUNING_ET_PARAMS = {
+    'n_estimators': [100, 200],
+    'max_depth': [10, 20, None],
+    'min_samples_split': [2, 5],
+}
+
+# Gradient Boosting parameters
+TUNING_GB_PARAMS = {
+    'n_estimators': [100, 200],
+    'max_depth': [3, 5],
+    'learning_rate': [0.05, 0.1],
+}
+
+# Inner CV folds for nested cross-validation
+TUNING_INNER_FOLDS = 3
+
+
+# =============================================================================
+# REPEATED CROSS-VALIDATION SETTINGS
+# =============================================================================
+
+# Number of splits for repeated k-fold CV
+REPEATED_CV_N_SPLITS = 5
+
+# Number of repeats for repeated k-fold CV
+REPEATED_CV_N_REPEATS = 10
+
+
+# =============================================================================
 # PIPELINE SETTINGS
 # =============================================================================
 

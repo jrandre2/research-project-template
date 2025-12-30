@@ -9,6 +9,10 @@ This stage handles:
 - Placebo tests (time and treatment group)
 - Sample restriction tests
 - Alternative standard error methods
+- Spatial cross-validation vs random CV comparison (if geographic data available)
+- Feature ablation studies
+- Hyperparameter tuning with nested cross-validation
+- Tree-based model comparisons
 
 Input Files
 -----------
@@ -18,10 +22,15 @@ Output Files
 ------------
 - data_work/diagnostics/robustness_results.csv
 - data_work/diagnostics/placebo_results.csv
+- data_work/diagnostics/spatial_cv_results.csv (optional)
+- data_work/diagnostics/ablation_results.csv (optional)
+- data_work/diagnostics/tuning_results.csv (optional)
 
 Usage
 -----
     python src/pipeline.py estimate_robustness
+    python src/pipeline.py estimate_robustness --spatial-cv
+    python src/pipeline.py estimate_robustness --ablation
 """
 from __future__ import annotations
 
@@ -51,11 +60,57 @@ from stages._qa_utils import generate_qa_report, QAMetrics
 
 # Import config settings
 try:
-    from config import CACHE_ENABLED, PARALLEL_ENABLED, PARALLEL_MAX_WORKERS
+    from config import (
+        CACHE_ENABLED, PARALLEL_ENABLED, PARALLEL_MAX_WORKERS,
+        SPATIAL_CV_N_GROUPS, SPATIAL_GROUPING_METHOD, RANDOM_STATE,
+        TUNING_RIDGE_ALPHAS, TUNING_ENET_ALPHAS, TUNING_ENET_L1_RATIOS,
+        TUNING_RF_PARAMS, TUNING_ET_PARAMS, TUNING_GB_PARAMS,
+        TUNING_INNER_FOLDS, REPEATED_CV_N_SPLITS, REPEATED_CV_N_REPEATS,
+    )
 except ImportError:
     CACHE_ENABLED = True
     PARALLEL_ENABLED = True
     PARALLEL_MAX_WORKERS = None
+    SPATIAL_CV_N_GROUPS = 5
+    SPATIAL_GROUPING_METHOD = 'kmeans'
+    RANDOM_STATE = 42
+    TUNING_RIDGE_ALPHAS = [0.1, 1.0, 10.0, 100.0]
+    TUNING_ENET_ALPHAS = [0.01, 0.1, 1.0, 10.0]
+    TUNING_ENET_L1_RATIOS = [0.1, 0.5, 0.9]
+    TUNING_RF_PARAMS = {'n_estimators': [100, 200], 'max_depth': [10, 20, None]}
+    TUNING_ET_PARAMS = {'n_estimators': [100, 200], 'max_depth': [10, 20, None]}
+    TUNING_GB_PARAMS = {'n_estimators': [100, 200], 'max_depth': [3, 5]}
+    TUNING_INNER_FOLDS = 3
+    REPEATED_CV_N_SPLITS = 5
+    REPEATED_CV_N_REPEATS = 10
+
+# Optional: scikit-learn models (required for ML-based robustness checks)
+try:
+    from sklearn.linear_model import Ridge, ElasticNet
+    from sklearn.ensemble import (
+        RandomForestRegressor,
+        ExtraTreesRegressor,
+        GradientBoostingRegressor,
+    )
+    from sklearn.preprocessing import StandardScaler
+    from sklearn.model_selection import (
+        cross_val_score,
+        RepeatedKFold,
+        GroupKFold,
+        GridSearchCV,
+    )
+    from sklearn.pipeline import make_pipeline, Pipeline
+    from sklearn.metrics import r2_score
+    SKLEARN_AVAILABLE = True
+except ImportError:
+    SKLEARN_AVAILABLE = False
+
+# Optional: Spatial CV module
+try:
+    from utils.spatial_cv import SpatialCVManager, compare_spatial_vs_random_cv
+    SPATIAL_CV_AVAILABLE = True
+except ImportError:
+    SPATIAL_CV_AVAILABLE = False
 
 
 # ============================================================
@@ -342,6 +397,484 @@ def run_alternative_specs(df: pd.DataFrame) -> list[RobustnessResult]:
                 ))
             except Exception:
                 pass
+
+    return results
+
+
+# ============================================================
+# SPATIAL CROSS-VALIDATION TESTS
+# ============================================================
+
+def run_spatial_cv_comparison(
+    df: pd.DataFrame,
+    feature_cols: list[str],
+    lat_col: str = 'latitude',
+    lon_col: str = 'longitude',
+    alpha: float = 1.0,
+) -> list[RobustnessResult]:
+    """
+    Compare spatial CV to random CV to quantify geographic data leakage.
+
+    This test helps identify when standard cross-validation is overly
+    optimistic due to spatial autocorrelation in the data.
+
+    Parameters
+    ----------
+    df : pd.DataFrame
+        Panel data with geographic coordinates
+    feature_cols : list[str]
+        Feature columns to use for prediction
+    lat_col : str
+        Name of latitude column
+    lon_col : str
+        Name of longitude column
+    alpha : float
+        Ridge regularization parameter
+
+    Returns
+    -------
+    list[RobustnessResult]
+        Comparison results with leakage estimates
+    """
+    results = []
+
+    if not SKLEARN_AVAILABLE or not SPATIAL_CV_AVAILABLE:
+        print("    Skipping: sklearn or spatial_cv module not available")
+        return results
+
+    # Check for required columns
+    if lat_col not in df.columns or lon_col not in df.columns:
+        print(f"    Skipping: missing geographic columns ({lat_col}, {lon_col})")
+        return results
+
+    if OUTCOME_VAR not in df.columns:
+        print(f"    Skipping: missing outcome column ({OUTCOME_VAR})")
+        return results
+
+    available_features = [c for c in feature_cols if c in df.columns]
+    if not available_features:
+        print("    Skipping: no feature columns found")
+        return results
+
+    # Prepare data
+    df_clean = df[[OUTCOME_VAR, lat_col, lon_col] + available_features].dropna()
+    if len(df_clean) < 50:
+        print(f"    Skipping: insufficient observations ({len(df_clean)})")
+        return results
+
+    X = df_clean[available_features].values
+    y = df_clean[OUTCOME_VAR].values
+    lats = df_clean[lat_col].values
+    lons = df_clean[lon_col].values
+
+    # Create model
+    model = make_pipeline(StandardScaler(), Ridge(alpha=alpha))
+
+    # Compare spatial vs random CV
+    try:
+        comparison = compare_spatial_vs_random_cv(
+            model, X, y, lats, lons,
+            n_groups=SPATIAL_CV_N_GROUPS,
+            method=SPATIAL_GROUPING_METHOD,
+            verbose=False,
+        )
+
+        results.append(RobustnessResult(
+            test_name='spatial_vs_random_cv',
+            test_type='spatial',
+            coefficient=comparison['leakage'],
+            std_error=comparison['spatial_cv']['std'],
+            p_value=0.0,  # Not applicable
+            n_obs=len(df_clean),
+            description=(
+                f"Leakage estimate: random CV R2={comparison['random_cv']['mean']:.3f}, "
+                f"spatial CV R2={comparison['spatial_cv']['mean']:.3f}"
+            )
+        ))
+        print(f"    Spatial CV: R2={comparison['spatial_cv']['mean']:.3f} ± {comparison['spatial_cv']['std']:.3f}")
+        print(f"    Random CV:  R2={comparison['random_cv']['mean']:.3f} ± {comparison['random_cv']['std']:.3f}")
+        print(f"    Leakage:    {comparison['leakage']:+.3f} ({comparison['leakage_pct']:.1f}%)")
+
+    except Exception as e:
+        print(f"    ERROR in spatial CV comparison: {e}")
+
+    return results
+
+
+def run_feature_ablation(
+    df: pd.DataFrame,
+    feature_cols: list[str],
+    feature_sets: dict[str, list[str]] = None,
+    lat_col: str = 'latitude',
+    lon_col: str = 'longitude',
+    alpha: float = 1.0,
+) -> list[RobustnessResult]:
+    """
+    Run feature ablation studies to assess feature importance.
+
+    Tests model performance with different feature subsets to understand
+    which features contribute most to predictive power.
+
+    Parameters
+    ----------
+    df : pd.DataFrame
+        Panel data
+    feature_cols : list[str]
+        All feature columns available
+    feature_sets : dict[str, list[str]], optional
+        Named feature subsets to test. If None, uses default sets.
+    lat_col : str
+        Name of latitude column (for spatial CV)
+    lon_col : str
+        Name of longitude column (for spatial CV)
+    alpha : float
+        Ridge regularization parameter
+
+    Returns
+    -------
+    list[RobustnessResult]
+        Ablation study results
+    """
+    results = []
+
+    if not SKLEARN_AVAILABLE:
+        print("    Skipping: sklearn not available")
+        return results
+
+    if OUTCOME_VAR not in df.columns:
+        print(f"    Skipping: missing outcome column ({OUTCOME_VAR})")
+        return results
+
+    available_features = [c for c in feature_cols if c in df.columns]
+    if not available_features:
+        print("    Skipping: no feature columns found")
+        return results
+
+    # Default feature sets if none provided
+    if feature_sets is None:
+        feature_sets = {
+            'all_features': available_features,
+            'first_half': available_features[:len(available_features)//2],
+            'second_half': available_features[len(available_features)//2:],
+            'top_5': available_features[:5] if len(available_features) >= 5 else available_features,
+        }
+
+    # Prepare data
+    df_clean = df[[OUTCOME_VAR] + available_features].dropna()
+    if len(df_clean) < 50:
+        print(f"    Skipping: insufficient observations ({len(df_clean)})")
+        return results
+
+    y = df_clean[OUTCOME_VAR].values
+
+    # Use spatial CV if coordinates available
+    use_spatial = (
+        SPATIAL_CV_AVAILABLE and
+        lat_col in df.columns and
+        lon_col in df.columns
+    )
+
+    if use_spatial:
+        df_clean = df[[OUTCOME_VAR, lat_col, lon_col] + available_features].dropna()
+        y = df_clean[OUTCOME_VAR].values
+        manager = SpatialCVManager(n_groups=SPATIAL_CV_N_GROUPS, method=SPATIAL_GROUPING_METHOD)
+        manager.create_groups_from_coordinates(
+            df_clean[lat_col].values,
+            df_clean[lon_col].values,
+            verbose=False,
+        )
+
+    for set_name, features in feature_sets.items():
+        set_features = [f for f in features if f in df_clean.columns]
+        if not set_features:
+            continue
+
+        X = df_clean[set_features].values
+        model = make_pipeline(StandardScaler(), Ridge(alpha=alpha))
+
+        try:
+            if use_spatial:
+                cv_result = manager.cross_validate(model, X, y, scale_features=False)
+                mean_r2, std_r2 = cv_result['mean'], cv_result['std']
+            else:
+                scores = cross_val_score(model, X, y, cv=5, scoring='r2')
+                mean_r2, std_r2 = np.mean(scores), np.std(scores)
+
+            results.append(RobustnessResult(
+                test_name=f'ablation_{set_name}',
+                test_type='ablation',
+                coefficient=mean_r2,
+                std_error=std_r2,
+                p_value=0.0,  # Not applicable
+                n_obs=len(df_clean),
+                description=f'{len(set_features)} features: R2={mean_r2:.3f} ± {std_r2:.3f}'
+            ))
+            print(f"    {set_name} ({len(set_features)} features): R2={mean_r2:.3f} ± {std_r2:.3f}")
+
+        except Exception as e:
+            print(f"    ERROR in ablation {set_name}: {e}")
+
+    return results
+
+
+def run_tuned_models(
+    df: pd.DataFrame,
+    feature_cols: list[str],
+    lat_col: str = 'latitude',
+    lon_col: str = 'longitude',
+) -> list[RobustnessResult]:
+    """
+    Run nested cross-validation with hyperparameter tuning.
+
+    Tests Ridge, ElasticNet, and tree-based models with proper
+    nested CV to avoid overfitting during hyperparameter selection.
+
+    Parameters
+    ----------
+    df : pd.DataFrame
+        Panel data
+    feature_cols : list[str]
+        Feature columns to use
+    lat_col : str
+        Name of latitude column
+    lon_col : str
+        Name of longitude column
+
+    Returns
+    -------
+    list[RobustnessResult]
+        Tuning results for each model
+    """
+    results = []
+
+    if not SKLEARN_AVAILABLE:
+        print("    Skipping: sklearn not available")
+        return results
+
+    if OUTCOME_VAR not in df.columns:
+        print(f"    Skipping: missing outcome column ({OUTCOME_VAR})")
+        return results
+
+    available_features = [c for c in feature_cols if c in df.columns]
+    if not available_features:
+        print("    Skipping: no feature columns found")
+        return results
+
+    # Prepare data
+    df_clean = df[[OUTCOME_VAR] + available_features].dropna()
+    if len(df_clean) < 50:
+        print(f"    Skipping: insufficient observations ({len(df_clean)})")
+        return results
+
+    X = df_clean[available_features].values
+    y = df_clean[OUTCOME_VAR].values
+
+    # Use spatial CV if coordinates available
+    use_spatial = (
+        SPATIAL_CV_AVAILABLE and
+        lat_col in df.columns and
+        lon_col in df.columns
+    )
+
+    if use_spatial:
+        df_clean = df[[OUTCOME_VAR, lat_col, lon_col] + available_features].dropna()
+        X = df_clean[available_features].values
+        y = df_clean[OUTCOME_VAR].values
+        manager = SpatialCVManager(n_groups=SPATIAL_CV_N_GROUPS, method=SPATIAL_GROUPING_METHOD)
+        groups = manager.create_groups_from_coordinates(
+            df_clean[lat_col].values,
+            df_clean[lon_col].values,
+            verbose=False,
+        )
+        outer_cv = GroupKFold(n_splits=SPATIAL_CV_N_GROUPS)
+        cv_iter = list(outer_cv.split(X, y, groups=groups))
+    else:
+        cv_iter = list(RepeatedKFold(
+            n_splits=REPEATED_CV_N_SPLITS,
+            n_repeats=1,
+            random_state=RANDOM_STATE
+        ).split(X, y))
+
+    # Define models to tune
+    model_configs = [
+        ('ridge', make_pipeline(StandardScaler(), Ridge()), {'ridge__alpha': TUNING_RIDGE_ALPHAS}),
+        ('elasticnet', make_pipeline(StandardScaler(), ElasticNet(max_iter=10000)),
+         {'elasticnet__alpha': TUNING_ENET_ALPHAS, 'elasticnet__l1_ratio': TUNING_ENET_L1_RATIOS}),
+        ('random_forest', RandomForestRegressor(random_state=RANDOM_STATE), TUNING_RF_PARAMS),
+        ('gradient_boosting', GradientBoostingRegressor(random_state=RANDOM_STATE), TUNING_GB_PARAMS),
+    ]
+
+    for model_name, base_model, param_grid in model_configs:
+        outer_scores = []
+        best_params_list = []
+
+        try:
+            for train_idx, test_idx in cv_iter:
+                X_train, X_test = X[train_idx], X[test_idx]
+                y_train, y_test = y[train_idx], y[test_idx]
+
+                # Inner CV for tuning
+                inner_cv = TUNING_INNER_FOLDS
+                grid_search = GridSearchCV(
+                    base_model, param_grid,
+                    cv=inner_cv, scoring='r2', n_jobs=-1
+                )
+                grid_search.fit(X_train, y_train)
+
+                # Evaluate on held-out fold
+                y_pred = grid_search.best_estimator_.predict(X_test)
+                outer_scores.append(r2_score(y_test, y_pred))
+                best_params_list.append(grid_search.best_params_)
+
+            mean_r2 = np.mean(outer_scores)
+            std_r2 = np.std(outer_scores)
+
+            # Get most common best params
+            from collections import Counter
+            param_counts = Counter(str(p) for p in best_params_list)
+            most_common = param_counts.most_common(1)[0][0] if param_counts else "N/A"
+
+            results.append(RobustnessResult(
+                test_name=f'tuned_{model_name}',
+                test_type='tuning',
+                coefficient=mean_r2,
+                std_error=std_r2,
+                p_value=0.0,  # Not applicable
+                n_obs=len(df_clean),
+                description=f'Nested CV R2={mean_r2:.3f} ± {std_r2:.3f}'
+            ))
+            print(f"    {model_name}: R2={mean_r2:.3f} ± {std_r2:.3f}")
+
+        except Exception as e:
+            print(f"    ERROR tuning {model_name}: {e}")
+
+    return results
+
+
+def run_encoding_comparisons(
+    df: pd.DataFrame,
+    categorical_col: str = None,
+    lat_col: str = 'latitude',
+    lon_col: str = 'longitude',
+) -> list[RobustnessResult]:
+    """
+    Compare categorical vs ordinal encoding for treatment variables.
+
+    Tests whether treating a categorical variable as ordinal (numeric)
+    or one-hot encoded produces different results.
+
+    Parameters
+    ----------
+    df : pd.DataFrame
+        Panel data
+    categorical_col : str, optional
+        Column to test encodings for. Defaults to TREATMENT_VAR.
+    lat_col : str
+        Name of latitude column
+    lon_col : str
+        Name of longitude column
+
+    Returns
+    -------
+    list[RobustnessResult]
+        Encoding comparison results
+    """
+    results = []
+
+    if not SKLEARN_AVAILABLE:
+        print("    Skipping: sklearn not available")
+        return results
+
+    if categorical_col is None:
+        categorical_col = TREATMENT_VAR
+
+    if categorical_col not in df.columns or OUTCOME_VAR not in df.columns:
+        print(f"    Skipping: missing required columns")
+        return results
+
+    # Prepare data
+    df_clean = df[[OUTCOME_VAR, categorical_col]].dropna()
+    if len(df_clean) < 50:
+        print(f"    Skipping: insufficient observations ({len(df_clean)})")
+        return results
+
+    y = df_clean[OUTCOME_VAR].values
+
+    # Use spatial CV if coordinates available
+    use_spatial = (
+        SPATIAL_CV_AVAILABLE and
+        lat_col in df.columns and
+        lon_col in df.columns
+    )
+
+    if use_spatial:
+        df_clean = df[[OUTCOME_VAR, categorical_col, lat_col, lon_col]].dropna()
+        y = df_clean[OUTCOME_VAR].values
+        manager = SpatialCVManager(n_groups=SPATIAL_CV_N_GROUPS, method=SPATIAL_GROUPING_METHOD)
+        manager.create_groups_from_coordinates(
+            df_clean[lat_col].values,
+            df_clean[lon_col].values,
+            verbose=False,
+        )
+
+    # Test 1: Ordinal encoding (treat as numeric)
+    X_ordinal = df_clean[[categorical_col]].values
+    model_ordinal = Ridge(alpha=1.0)
+
+    try:
+        if use_spatial:
+            cv_result = manager.cross_validate(model_ordinal, X_ordinal, y)
+            mean_r2, std_r2 = cv_result['mean'], cv_result['std']
+        else:
+            scores = cross_val_score(model_ordinal, X_ordinal, y, cv=5, scoring='r2')
+            mean_r2, std_r2 = np.mean(scores), np.std(scores)
+
+        results.append(RobustnessResult(
+            test_name=f'{categorical_col}_ordinal',
+            test_type='encoding',
+            coefficient=mean_r2,
+            std_error=std_r2,
+            p_value=0.0,
+            n_obs=len(df_clean),
+            description=f'Ordinal encoding: R2={mean_r2:.3f}'
+        ))
+        print(f"    Ordinal: R2={mean_r2:.3f} ± {std_r2:.3f}")
+
+    except Exception as e:
+        print(f"    ERROR in ordinal encoding: {e}")
+
+    # Test 2: One-hot encoding
+    try:
+        from sklearn.preprocessing import OneHotEncoder
+        encoder = OneHotEncoder(sparse_output=False, handle_unknown='ignore')
+    except TypeError:
+        from sklearn.preprocessing import OneHotEncoder
+        encoder = OneHotEncoder(sparse=False, handle_unknown='ignore')
+
+    try:
+        X_onehot = encoder.fit_transform(df_clean[[categorical_col]])
+        model_onehot = Ridge(alpha=1.0)
+
+        if use_spatial:
+            cv_result = manager.cross_validate(model_onehot, X_onehot, y)
+            mean_r2, std_r2 = cv_result['mean'], cv_result['std']
+        else:
+            scores = cross_val_score(model_onehot, X_onehot, y, cv=5, scoring='r2')
+            mean_r2, std_r2 = np.mean(scores), np.std(scores)
+
+        results.append(RobustnessResult(
+            test_name=f'{categorical_col}_categorical',
+            test_type='encoding',
+            coefficient=mean_r2,
+            std_error=std_r2,
+            p_value=0.0,
+            n_obs=len(df_clean),
+            description=f'One-hot encoding: R2={mean_r2:.3f}'
+        ))
+        print(f"    Categorical: R2={mean_r2:.3f} ± {std_r2:.3f}")
+
+    except Exception as e:
+        print(f"    ERROR in one-hot encoding: {e}")
 
     return results
 

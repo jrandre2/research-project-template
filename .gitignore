@@ -79,3 +79,7 @@ htmlcov/
 build/
 dist/
 *.egg-info/
+
+# Project-specific (internal)
+doc/RISBS_*
+manuscript_quarto/drafts/

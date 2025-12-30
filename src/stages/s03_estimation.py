@@ -118,6 +118,82 @@ SPECIFICATIONS = {
 
 
 # ============================================================
+# MODEL REGISTRY (for ML models - use with run_tuned_models in s04_robustness)
+# ============================================================
+
+# Model registry for ML-based estimation (prediction tasks)
+# These are used by s04_robustness.run_tuned_models() for model comparison
+#
+# To add custom models, extend this registry:
+#   ML_MODELS['my_model'] = lambda: MyModel(param=value)
+#
+# Then use in robustness testing:
+#   from stages.s04_robustness import run_tuned_models
+#   results = run_tuned_models(df, feature_cols)
+
+try:
+    from sklearn.linear_model import Ridge, ElasticNet
+    from sklearn.ensemble import (
+        RandomForestRegressor,
+        ExtraTreesRegressor,
+        GradientBoostingRegressor,
+    )
+    from config import RANDOM_STATE
+except ImportError:
+    RANDOM_STATE = 42
+    Ridge = None
+    ElasticNet = None
+    RandomForestRegressor = None
+    ExtraTreesRegressor = None
+    GradientBoostingRegressor = None
+
+# Factory functions for model instantiation
+ML_MODELS = {}
+if Ridge is not None:
+    ML_MODELS['ridge'] = lambda alpha=1.0: Ridge(alpha=alpha)
+    ML_MODELS['elasticnet'] = lambda alpha=1.0, l1_ratio=0.5: ElasticNet(
+        alpha=alpha, l1_ratio=l1_ratio, max_iter=10000
+    )
+if RandomForestRegressor is not None:
+    ML_MODELS['random_forest'] = lambda n_estimators=100, max_depth=None: RandomForestRegressor(
+        n_estimators=n_estimators, max_depth=max_depth, random_state=RANDOM_STATE
+    )
+    ML_MODELS['extra_trees'] = lambda n_estimators=100, max_depth=None: ExtraTreesRegressor(
+        n_estimators=n_estimators, max_depth=max_depth, random_state=RANDOM_STATE
+    )
+    ML_MODELS['gradient_boosting'] = lambda n_estimators=100, max_depth=3: GradientBoostingRegressor(
+        n_estimators=n_estimators, max_depth=max_depth, random_state=RANDOM_STATE
+    )
+
+
+def get_model(name: str, **kwargs):
+    """
+    Get a model instance from the registry.
+
+    Parameters
+    ----------
+    name : str
+        Model name (e.g., 'ridge', 'random_forest')
+    **kwargs
+        Model-specific parameters
+
+    Returns
+    -------
+    sklearn estimator
+        Model instance
+
+    Examples
+    --------
+    >>> model = get_model('ridge', alpha=10.0)
+    >>> model = get_model('random_forest', n_estimators=200)
+    """
+    if name not in ML_MODELS:
+        available = list(ML_MODELS.keys())
+        raise ValueError(f"Unknown model: {name}. Available: {available}")
+    return ML_MODELS[name](**kwargs)
+
+
+# ============================================================
 # ESTIMATION RESULTS
 # ============================================================
 

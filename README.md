@@ -25,6 +25,8 @@ Licensing: code is PolyForm Noncommercial 1.0.0 and documentation/manuscript con
 - Journal configuration parsing and comparison tools (heuristic parsing + URL fetch)
 - Project migration tools for onboarding legacy codebases
 - Data audit utilities for sample attrition and diagnostics
+- Spatial cross-validation for geographic data (optional geopandas dependency)
+- ML model registry with hyperparameter tuning support
 
 **Planned:** Multilanguage analysis support (R, Stata, Julia) - see [doc/design/MULTILANGUAGE_ANALYSIS.md](doc/design/MULTILANGUAGE_ANALYSIS.md)
 
@@ -42,6 +44,9 @@ Divergent manuscript drafts can be managed as variants in `manuscript_quarto/var
 python -m venv .venv
 source .venv/bin/activate
 pip install -r requirements.txt
+
+# Optional: Install spatial analysis dependencies
+pip install -r requirements-spatial.txt
 
 # Run the pipeline (use --demo for synthetic data, or add real data to data_raw/)
 python src/pipeline.py ingest_data --demo
@@ -125,6 +130,7 @@ See `demo/README.md` for a small sample dataset and expected outputs that exerci
 │   └── utils/
 │       ├── figure_style.py
 │       ├── helpers.py
+│       ├── spatial_cv.py       # Spatial cross-validation (optional geopandas)
 │       ├── synthetic_data.py
 │       └── validation.py
 │

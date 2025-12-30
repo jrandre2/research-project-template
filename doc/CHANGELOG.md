@@ -4,6 +4,53 @@ All notable changes to this project are documented in this file.
 
 ---
 
+## [2025-12-29] - Spatial Cross-Validation and ML Model Expansion
+
+### Added
+
+- **Spatial Cross-Validation Module** (`src/utils/spatial_cv.py`)
+  - `SpatialCVManager` class with 8 grouping methods
+  - Methods: kmeans, balanced_kmeans, geographic_bands, longitude_bands, spatial_blocks, zip_digit, contiguity_queen, contiguity_rook
+  - `cross_validate()` with GroupKFold integration
+  - `compare_to_random_cv()` for leakage quantification
+  - Convenience functions: `create_spatial_groups_simple()`, `compare_spatial_vs_random_cv()`
+  - Optional geopandas dependency (graceful fallback for contiguity methods)
+
+- **ML Model Registry** (`src/stages/s03_estimation.py`)
+  - `ML_MODELS` registry with factory functions
+  - Models: ridge, elasticnet, random_forest, extra_trees, gradient_boosting
+  - `get_model()` function for model instantiation
+
+- **Extended Robustness Tests** (`src/stages/s04_robustness.py`)
+  - `run_spatial_cv_comparison()`: Compare spatial vs random CV
+  - `run_feature_ablation()`: Systematic feature subset testing
+  - `run_tuned_models()`: Nested CV with hyperparameter tuning
+  - `run_encoding_comparisons()`: Categorical vs ordinal encoding tests
+
+- **Configuration Updates** (`src/config.py`)
+  - Spatial CV settings: `SPATIAL_CV_N_GROUPS`, `SPATIAL_GROUPING_METHOD`
+  - ML hyperparameter grids for Ridge, ElasticNet, RF, ExtraTrees, GradientBoosting
+  - Repeated CV settings: `REPEATED_CV_N_SPLITS`, `REPEATED_CV_N_REPEATS`
+
+- **Optional Spatial Dependencies** (`requirements-spatial.txt`)
+  - geopandas>=0.14.0, shapely>=2.0.0, pyproj>=3.5.0
+
+- **Comprehensive Tests** (`tests/test_spatial_cv.py`)
+  - 23 tests covering grouping methods, CV, leakage quantification, edge cases
+
+### Changed
+
+- `requirements.txt`: Made scikit-learn a required dependency (>=1.3.0)
+- `doc/PIPELINE.md`: Added Stage 04 extended tests and Spatial CV section
+- `doc/METHODOLOGY.md`: Added Spatial Cross-Validation methodology section
+- `README.md`: Updated features list and project structure
+
+### Source
+
+Features backported from ML Vision Broadband research project.
+
+---
+
 ## [2025-12-27] - AI-Assisted Drafting and Documentation Sync
 
 ### Added
