@@ -194,6 +194,37 @@ Configure manuscripts in `src/config.py` via the `MANUSCRIPTS` dictionary.
 
 See `doc/SYNTHETIC_REVIEW_PROCESS.md` for full methodology.
 
+## GUI Dashboard
+
+A lightweight web interface for monitoring and supervision. **CLI remains primary interface.**
+
+```bash
+# Start the GUI server
+python src/pipeline.py gui                    # Default: http://127.0.0.1:8000
+python src/pipeline.py gui --port 8001        # Custom port
+python src/pipeline.py gui --no-reload        # Disable hot reload
+```
+
+**Features:**
+
+| Page | Purpose |
+|------|---------|
+| Pipeline Dashboard | View stage status, run stages, see QA metrics, manage cache |
+| Review Tracker | Kanban board for peer review comments, drag-drop status updates |
+| Supervision Controls | Set AI autonomy levels (0-4), approve pending actions, audit log |
+
+**Tech stack:** FastAPI + HTMX + Alpine.js + Tailwind CSS (CDN-served, no build step)
+
+**Supervision levels:**
+
+- Level 0: Human only - no AI assistance
+- Level 1: AI suggests - human approves all actions
+- Level 2: AI proposes - human reviews before execution
+- Level 3: AI executes - human monitors results
+- Level 4: Fully autonomous - human handles exceptions only
+
+Settings are stored in `.centaur/supervision.json`.
+
 ## AI-Assisted Drafting
 
 Generate draft manuscript sections from pipeline outputs (requires LLM API key).
@@ -248,6 +279,31 @@ dist = haversine_distance(40.7, -74.0, 34.1, -118.2)  # NYC to LA in meters
 - `ensure_crs()`, `to_projected()` - CRS handling
 
 See `doc/GEOSPATIAL_ANALYSIS.md` for full documentation.
+
+## Web Dashboard (GUI)
+
+Launch a lightweight web dashboard for human supervision of AI-operated pipelines.
+
+```bash
+# Start the dashboard (default: http://127.0.0.1:8000)
+python src/pipeline.py gui
+
+# Custom host/port
+python src/pipeline.py gui --host 0.0.0.0 --port 8080
+
+# Disable auto-reload (production)
+python src/pipeline.py gui --no-reload
+```
+
+**Features:**
+
+- **Pipeline Dashboard**: View stage status, run stages, see QA metrics
+- **Review Tracker**: Kanban view of peer review comments
+- **Supervision Controls**: Set AI autonomy level (0-4), approve pending actions
+
+**Tech stack:** FastAPI + HTMX + Alpine.js (no build step, CDN-served)
+
+**Note:** CLI remains the primary interface. GUI is for human monitoring and oversight.
 
 ## Key References
 

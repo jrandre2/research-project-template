@@ -1,0 +1,368 @@
+{% extends "base.html" %}
+
+{% block title %}Review Tracker - CENTAUR{% endblock %}
+
+{% block content %}
+<div class="space-y-6" x-data="reviewTracker()" x-init="loadData()">
+    <!-- Header -->
+    <div class="flex justify-between items-center">
+        <div>
+            <h1 class="text-2xl font-bold text-gray-900 dark:text-white">Review Tracker</h1>
+            <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
+                Manage peer review comments. Drag cards between columns to update status.
+            </p>
+        </div>
+        <div class="flex space-x-3">
+            <button @click="loadData()"
+                    class="inline-flex items-center px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm text-sm font-medium text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600">
+                <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
+                </svg>
+                Refresh
+            </button>
+        </div>
+    </div>
+
+    <!-- Loading State -->
+    <div x-show="loading" class="text-center py-12">
+        <svg class="animate-spin h-8 w-8 mx-auto text-primary-600" fill="none" viewBox="0 0 24 24">
+            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+        </svg>
+        <p class="mt-2 text-sm text-gray-500 dark:text-gray-400">Loading review data...</p>
+    </div>
+
+    <!-- No Active Review Message -->
+    <div x-show="!loading && !hasReview" x-cloak
+         class="bg-white dark:bg-gray-800 rounded-lg shadow border border-gray-200 dark:border-gray-700 p-8 text-center">
+        <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+        </svg>
+        <h3 class="mt-2 text-sm font-medium text-gray-900 dark:text-white">No Active Review</h3>
+        <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
+            Start a new review cycle from the CLI:
+        </p>
+        <div class="mt-4">
+            <code class="bg-gray-100 dark:bg-gray-700 px-3 py-2 rounded text-sm">
+                python src/pipeline.py review_new --focus economics
+            </code>
+        </div>
+    </div>
+
+    <!-- Review Content (shown when there's an active review) -->
+    <template x-if="!loading && hasReview">
+        <div class="space-y-6">
+            <!-- Summary Stats -->
+            <div class="bg-white dark:bg-gray-800 rounded-lg shadow border border-gray-200 dark:border-gray-700 p-4">
+                <div class="grid grid-cols-2 md:grid-cols-5 gap-4">
+                    <div class="text-center">
+                        <div class="text-2xl font-bold text-gray-900 dark:text-white" x-text="summary.total_comments"></div>
+                        <div class="text-xs text-gray-500 dark:text-gray-400">Total Comments</div>
+                    </div>
+                    <div class="text-center">
+                        <div class="text-2xl font-bold text-yellow-600" x-text="summary.action_needed"></div>
+                        <div class="text-xs text-gray-500 dark:text-gray-400">Action Needed</div>
+                    </div>
+                    <div class="text-center">
+                        <div class="text-2xl font-bold text-green-600" x-text="summary.addressed"></div>
+                        <div class="text-xs text-gray-500 dark:text-gray-400">Addressed</div>
+                    </div>
+                    <div class="text-center col-span-2 md:col-span-2">
+                        <div class="flex items-center justify-center space-x-2">
+                            <div class="flex-1 bg-gray-200 dark:bg-gray-700 rounded-full h-4 max-w-xs">
+                                <div class="bg-green-500 h-4 rounded-full transition-all duration-500"
+                                     :style="'width: ' + summary.progress_pct + '%'"></div>
+                            </div>
+                            <span class="text-sm font-medium text-gray-900 dark:text-white" x-text="summary.progress_pct + '%'"></span>
+                        </div>
+                        <div class="text-xs text-gray-500 dark:text-gray-400 mt-1">Progress</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Review Info -->
+            <div x-show="tracker.review_number" class="flex items-center space-x-4 text-sm text-gray-600 dark:text-gray-400">
+                <span x-show="tracker.review_number">
+                    <strong>Review:</strong> #<span x-text="tracker.review_number"></span>
+                </span>
+                <span x-show="tracker.discipline">
+                    <strong>Discipline:</strong> <span x-text="tracker.discipline"></span>
+                </span>
+                <span x-show="tracker.last_updated">
+                    <strong>Updated:</strong> <span x-text="tracker.last_updated"></span>
+                </span>
+            </div>
+
+            <!-- Kanban Board -->
+            <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+                <!-- Column: Pending -->
+                <div class="bg-gray-100 dark:bg-gray-800 rounded-lg p-4"
+                     @dragover.prevent
+                     @drop="dropComment($event, 'PENDING')">
+                    <div class="flex items-center justify-between mb-4">
+                        <h2 class="font-semibold text-gray-700 dark:text-gray-200">Pending</h2>
+                        <span class="text-xs bg-gray-200 dark:bg-gray-700 text-gray-600 dark:text-gray-400 px-2 py-1 rounded-full"
+                              x-text="getColumnCount('PENDING')"></span>
+                    </div>
+                    <div class="space-y-3 min-h-[200px]">
+                        <template x-for="comment in getColumnComments('PENDING')" :key="comment.id">
+                            <div class="bg-white dark:bg-gray-700 rounded-lg shadow p-3 cursor-move border-l-4 border-gray-400"
+                                 :class="comment.type === 'major' ? 'border-l-red-500' : 'border-l-blue-400'"
+                                 draggable="true"
+                                 @dragstart="dragStart($event, comment)"
+                                 @dragend="dragEnd()">
+                                <div class="flex items-start justify-between">
+                                    <span class="text-xs font-mono px-1.5 py-0.5 rounded"
+                                          :class="comment.type === 'major' ? 'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300' : 'bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300'"
+                                          x-text="comment.id"></span>
+                                </div>
+                                <h3 class="mt-2 text-sm font-medium text-gray-900 dark:text-white line-clamp-2" x-text="comment.title"></h3>
+                                <p class="mt-1 text-xs text-gray-500 dark:text-gray-400 line-clamp-3" x-text="comment.concern"></p>
+                            </div>
+                        </template>
+                        <p x-show="getColumnCount('PENDING') === 0" class="text-sm text-gray-500 dark:text-gray-400 italic text-center py-8">
+                            No pending comments
+                        </p>
+                    </div>
+                </div>
+
+                <!-- Column: Action Needed -->
+                <div class="bg-yellow-50 dark:bg-yellow-900/20 rounded-lg p-4"
+                     @dragover.prevent
+                     @drop="dropComment($event, 'VALID - ACTION NEEDED')">
+                    <div class="flex items-center justify-between mb-4">
+                        <h2 class="font-semibold text-yellow-700 dark:text-yellow-300">Action Needed</h2>
+                        <span class="text-xs bg-yellow-200 dark:bg-yellow-800 text-yellow-700 dark:text-yellow-300 px-2 py-1 rounded-full"
+                              x-text="getColumnCount('VALID - ACTION NEEDED')"></span>
+                    </div>
+                    <div class="space-y-3 min-h-[200px]">
+                        <template x-for="comment in getColumnComments('VALID - ACTION NEEDED')" :key="comment.id">
+                            <div class="bg-white dark:bg-gray-700 rounded-lg shadow p-3 cursor-move border-l-4"
+                                 :class="comment.type === 'major' ? 'border-l-red-500' : 'border-l-blue-400'"
+                                 draggable="true"
+                                 @dragstart="dragStart($event, comment)"
+                                 @dragend="dragEnd()">
+                                <div class="flex items-start justify-between">
+                                    <span class="text-xs font-mono px-1.5 py-0.5 rounded"
+                                          :class="comment.type === 'major' ? 'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300' : 'bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300'"
+                                          x-text="comment.id"></span>
+                                </div>
+                                <h3 class="mt-2 text-sm font-medium text-gray-900 dark:text-white line-clamp-2" x-text="comment.title"></h3>
+                                <p class="mt-1 text-xs text-gray-500 dark:text-gray-400 line-clamp-3" x-text="comment.concern"></p>
+                            </div>
+                        </template>
+                        <p x-show="getColumnCount('VALID - ACTION NEEDED') === 0" class="text-sm text-yellow-600 dark:text-yellow-400 italic text-center py-8">
+                            No action items
+                        </p>
+                    </div>
+                </div>
+
+                <!-- Column: Addressed -->
+                <div class="bg-green-50 dark:bg-green-900/20 rounded-lg p-4"
+                     @dragover.prevent
+                     @drop="dropComment($event, 'ALREADY ADDRESSED')">
+                    <div class="flex items-center justify-between mb-4">
+                        <h2 class="font-semibold text-green-700 dark:text-green-300">Addressed</h2>
+                        <span class="text-xs bg-green-200 dark:bg-green-800 text-green-700 dark:text-green-300 px-2 py-1 rounded-full"
+                              x-text="getColumnCount('ALREADY ADDRESSED')"></span>
+                    </div>
+                    <div class="space-y-3 min-h-[200px]">
+                        <template x-for="comment in getColumnComments('ALREADY ADDRESSED')" :key="comment.id">
+                            <div class="bg-white dark:bg-gray-700 rounded-lg shadow p-3 cursor-move border-l-4"
+                                 :class="comment.type === 'major' ? 'border-l-red-500' : 'border-l-blue-400'"
+                                 draggable="true"
+                                 @dragstart="dragStart($event, comment)"
+                                 @dragend="dragEnd()">
+                                <div class="flex items-start justify-between">
+                                    <span class="text-xs font-mono px-1.5 py-0.5 rounded"
+                                          :class="comment.type === 'major' ? 'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300' : 'bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300'"
+                                          x-text="comment.id"></span>
+                                </div>
+                                <h3 class="mt-2 text-sm font-medium text-gray-900 dark:text-white line-clamp-2" x-text="comment.title"></h3>
+                                <p class="mt-1 text-xs text-gray-500 dark:text-gray-400 line-clamp-3" x-text="comment.concern"></p>
+                            </div>
+                        </template>
+                        <p x-show="getColumnCount('ALREADY ADDRESSED') === 0" class="text-sm text-green-600 dark:text-green-400 italic text-center py-8">
+                            No addressed comments
+                        </p>
+                    </div>
+                </div>
+
+                <!-- Column: Beyond Scope -->
+                <div class="bg-gray-100 dark:bg-gray-800 rounded-lg p-4"
+                     @dragover.prevent
+                     @drop="dropComment($event, 'BEYOND SCOPE')">
+                    <div class="flex items-center justify-between mb-4">
+                        <h2 class="font-semibold text-gray-600 dark:text-gray-300">Beyond Scope</h2>
+                        <span class="text-xs bg-gray-200 dark:bg-gray-700 text-gray-600 dark:text-gray-400 px-2 py-1 rounded-full"
+                              x-text="getColumnCount('BEYOND SCOPE')"></span>
+                    </div>
+                    <div class="space-y-3 min-h-[200px]">
+                        <template x-for="comment in getColumnComments('BEYOND SCOPE')" :key="comment.id">
+                            <div class="bg-white dark:bg-gray-700 rounded-lg shadow p-3 cursor-move border-l-4"
+                                 :class="comment.type === 'major' ? 'border-l-red-500' : 'border-l-blue-400'"
+                                 draggable="true"
+                                 @dragstart="dragStart($event, comment)"
+                                 @dragend="dragEnd()">
+                                <div class="flex items-start justify-between">
+                                    <span class="text-xs font-mono px-1.5 py-0.5 rounded"
+                                          :class="comment.type === 'major' ? 'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300' : 'bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300'"
+                                          x-text="comment.id"></span>
+                                </div>
+                                <h3 class="mt-2 text-sm font-medium text-gray-900 dark:text-white line-clamp-2" x-text="comment.title"></h3>
+                                <p class="mt-1 text-xs text-gray-500 dark:text-gray-400 line-clamp-3" x-text="comment.concern"></p>
+                            </div>
+                        </template>
+                        <p x-show="getColumnCount('BEYOND SCOPE') === 0" class="text-sm text-gray-500 dark:text-gray-400 italic text-center py-8">
+                            No deferred comments
+                        </p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Status Update Notification -->
+            <div x-show="notification" x-transition
+                 class="fixed bottom-4 right-4 px-4 py-3 rounded-lg shadow-lg"
+                 :class="notificationError ? 'bg-red-500 text-white' : 'bg-green-500 text-white'">
+                <span x-text="notification"></span>
+            </div>
+        </div>
+    </template>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+function reviewTracker() {
+    return {
+        loading: true,
+        hasReview: false,
+        tracker: {},
+        comments: [],
+        summary: {
+            total_comments: 0,
+            addressed: 0,
+            action_needed: 0,
+            progress_pct: 0
+        },
+        draggingComment: null,
+        notification: '',
+        notificationError: false,
+
+        async loadData() {
+            this.loading = true;
+            try {
+                // Load tracker data and summary in parallel
+                const [trackerRes, summaryRes] = await Promise.all([
+                    fetch('/api/reviews/tracker'),
+                    fetch('/api/reviews/summary')
+                ]);
+
+                const trackerData = await trackerRes.json();
+                const summaryData = await summaryRes.json();
+
+                this.hasReview = trackerData.has_review;
+                this.tracker = trackerData;
+                this.comments = trackerData.comments || [];
+                this.summary = summaryData;
+            } catch (error) {
+                console.error('Failed to load review data:', error);
+                this.hasReview = false;
+            }
+            this.loading = false;
+        },
+
+        getColumnComments(status) {
+            return this.comments.filter(c => c.status === status);
+        },
+
+        getColumnCount(status) {
+            return this.getColumnComments(status).length;
+        },
+
+        dragStart(event, comment) {
+            this.draggingComment = comment;
+            event.dataTransfer.effectAllowed = 'move';
+            event.dataTransfer.setData('text/plain', comment.id);
+            event.target.classList.add('opacity-50');
+        },
+
+        dragEnd() {
+            this.draggingComment = null;
+            document.querySelectorAll('.opacity-50').forEach(el => {
+                el.classList.remove('opacity-50');
+            });
+        },
+
+        async dropComment(event, newStatus) {
+            event.preventDefault();
+            if (!this.draggingComment) return;
+
+            const comment = this.draggingComment;
+            const oldStatus = comment.status;
+
+            if (oldStatus === newStatus) return;
+
+            // Optimistic update
+            comment.status = newStatus;
+
+            try {
+                const response = await fetch(`/api/reviews/comments/${comment.id}/status?new_status=${encodeURIComponent(newStatus)}`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' }
+                });
+
+                if (!response.ok) {
+                    throw new Error('Failed to update status');
+                }
+
+                this.showNotification(`Moved ${comment.id} to ${this.getStatusLabel(newStatus)}`);
+
+                // Refresh summary
+                const summaryRes = await fetch('/api/reviews/summary');
+                this.summary = await summaryRes.json();
+            } catch (error) {
+                // Revert on error
+                comment.status = oldStatus;
+                this.showNotification('Failed to update status', true);
+                console.error('Status update failed:', error);
+            }
+        },
+
+        getStatusLabel(status) {
+            const labels = {
+                'PENDING': 'Pending',
+                'VALID - ACTION NEEDED': 'Action Needed',
+                'ALREADY ADDRESSED': 'Addressed',
+                'BEYOND SCOPE': 'Beyond Scope',
+                'INVALID': 'Invalid'
+            };
+            return labels[status] || status;
+        },
+
+        showNotification(message, isError = false) {
+            this.notification = message;
+            this.notificationError = isError;
+            setTimeout(() => {
+                this.notification = '';
+            }, 3000);
+        }
+    };
+}
+</script>
+
+<style>
+.line-clamp-2 {
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+}
+.line-clamp-3 {
+    display: -webkit-box;
+    -webkit-line-clamp: 3;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+}
+</style>
+{% endblock %}

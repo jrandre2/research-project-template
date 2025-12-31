@@ -1,0 +1,384 @@
+{% extends "base.html" %}
+
+{% block title %}AI Supervision - CENTAUR{% endblock %}
+
+{% block content %}
+<div class="space-y-8" x-data="supervisionControls()" x-init="loadData()">
+    <!-- Header -->
+    <div class="flex justify-between items-center">
+        <div>
+            <h1 class="text-2xl font-bold text-gray-900 dark:text-white">AI Supervision Controls</h1>
+            <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
+                Configure AI agent autonomy level and approve pending actions.
+            </p>
+        </div>
+        <div class="flex space-x-3">
+            <button @click="loadData()"
+                    class="inline-flex items-center px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm text-sm font-medium text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600">
+                <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
+                </svg>
+                Refresh
+            </button>
+        </div>
+    </div>
+
+    <!-- Loading State -->
+    <div x-show="loading" class="text-center py-12">
+        <svg class="animate-spin h-8 w-8 mx-auto text-primary-600" fill="none" viewBox="0 0 24 24">
+            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+        </svg>
+        <p class="mt-2 text-sm text-gray-500 dark:text-gray-400">Loading supervision settings...</p>
+    </div>
+
+    <!-- Main Content -->
+    <template x-if="!loading">
+        <div class="space-y-8">
+            <!-- Supervision Level Selector -->
+            <div class="bg-white dark:bg-gray-800 rounded-lg shadow border border-gray-200 dark:border-gray-700 overflow-hidden">
+                <div class="px-6 py-4 border-b border-gray-200 dark:border-gray-700">
+                    <h2 class="text-lg font-semibold text-gray-900 dark:text-white">Autonomy Level</h2>
+                    <p class="text-sm text-gray-500 dark:text-gray-400">Select how much independence AI agents have when executing tasks.</p>
+                </div>
+
+                <div class="p-6">
+                    <div class="space-y-4">
+                        <!-- Level 0 -->
+                        <label class="flex items-start p-4 border rounded-lg cursor-pointer transition-colors"
+                               :class="level === 0 ? 'border-primary-500 bg-primary-50 dark:bg-primary-900/20' : 'border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700/50'">
+                            <input type="radio" name="level" value="0" x-model.number="level" class="mt-1 mr-4">
+                            <div>
+                                <div class="font-semibold text-gray-900 dark:text-white">Level 0: Human Only</div>
+                                <p class="text-sm text-gray-500 dark:text-gray-400">All actions executed manually by human. AI provides no assistance.</p>
+                            </div>
+                        </label>
+
+                        <!-- Level 1 -->
+                        <label class="flex items-start p-4 border rounded-lg cursor-pointer transition-colors"
+                               :class="level === 1 ? 'border-primary-500 bg-primary-50 dark:bg-primary-900/20' : 'border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700/50'">
+                            <input type="radio" name="level" value="1" x-model.number="level" class="mt-1 mr-4">
+                            <div>
+                                <div class="font-semibold text-gray-900 dark:text-white">Level 1: AI Suggests</div>
+                                <p class="text-sm text-gray-500 dark:text-gray-400">AI suggests actions, human approves everything before execution.</p>
+                                <span class="inline-block mt-1 text-xs px-2 py-0.5 bg-green-100 dark:bg-green-900 text-green-700 dark:text-green-300 rounded">Recommended for new users</span>
+                            </div>
+                        </label>
+
+                        <!-- Level 2 -->
+                        <label class="flex items-start p-4 border rounded-lg cursor-pointer transition-colors"
+                               :class="level === 2 ? 'border-primary-500 bg-primary-50 dark:bg-primary-900/20' : 'border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700/50'">
+                            <input type="radio" name="level" value="2" x-model.number="level" class="mt-1 mr-4">
+                            <div>
+                                <div class="font-semibold text-gray-900 dark:text-white">Level 2: AI Proposes</div>
+                                <p class="text-sm text-gray-500 dark:text-gray-400">AI proposes specific actions, human reviews before execution. Good for daily workflow.</p>
+                            </div>
+                        </label>
+
+                        <!-- Level 3 -->
+                        <label class="flex items-start p-4 border rounded-lg cursor-pointer transition-colors"
+                               :class="level === 3 ? 'border-primary-500 bg-primary-50 dark:bg-primary-900/20' : 'border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700/50'">
+                            <input type="radio" name="level" value="3" x-model.number="level" class="mt-1 mr-4">
+                            <div>
+                                <div class="font-semibold text-gray-900 dark:text-white">Level 3: AI Executes</div>
+                                <p class="text-sm text-gray-500 dark:text-gray-400">AI executes autonomously, human monitors results. For trusted tasks.</p>
+                                <span class="inline-block mt-1 text-xs px-2 py-0.5 bg-yellow-100 dark:bg-yellow-900 text-yellow-700 dark:text-yellow-300 rounded">Requires trust in AI</span>
+                            </div>
+                        </label>
+
+                        <!-- Level 4 -->
+                        <label class="flex items-start p-4 border rounded-lg cursor-pointer transition-colors"
+                               :class="level === 4 ? 'border-primary-500 bg-primary-50 dark:bg-primary-900/20' : 'border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700/50'">
+                            <input type="radio" name="level" value="4" x-model.number="level" class="mt-1 mr-4">
+                            <div>
+                                <div class="font-semibold text-gray-900 dark:text-white">Level 4: Fully Autonomous</div>
+                                <p class="text-sm text-gray-500 dark:text-gray-400">AI operates independently, human handles exceptions only. For batch/overnight runs.</p>
+                                <span class="inline-block mt-1 text-xs px-2 py-0.5 bg-red-100 dark:bg-red-900 text-red-700 dark:text-red-300 rounded">Use with caution</span>
+                            </div>
+                        </label>
+                    </div>
+
+                    <div class="mt-6 flex items-center justify-between">
+                        <div>
+                            <button @click="saveLevel()"
+                                    :disabled="saving || level === savedLevel"
+                                    class="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-primary-600 hover:bg-primary-700 disabled:opacity-50 disabled:cursor-not-allowed">
+                                <span x-show="!saving">Save Changes</span>
+                                <span x-show="saving" class="flex items-center">
+                                    <svg class="animate-spin -ml-1 mr-2 h-4 w-4" fill="none" viewBox="0 0 24 24">
+                                        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                                        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                    </svg>
+                                    Saving...
+                                </span>
+                            </button>
+                            <span x-show="level !== savedLevel" class="ml-3 text-sm text-yellow-600 dark:text-yellow-400">
+                                Unsaved changes
+                            </span>
+                        </div>
+                        <span x-show="lastUpdated" class="text-xs text-gray-500 dark:text-gray-400">
+                            Last updated: <span x-text="formatDate(lastUpdated)"></span>
+                        </span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Pending Approvals Queue -->
+            <div class="bg-white dark:bg-gray-800 rounded-lg shadow border border-gray-200 dark:border-gray-700 overflow-hidden">
+                <div class="px-6 py-4 border-b border-gray-200 dark:border-gray-700 flex justify-between items-center">
+                    <div>
+                        <h2 class="text-lg font-semibold text-gray-900 dark:text-white">Pending Approvals</h2>
+                        <p class="text-sm text-gray-500 dark:text-gray-400">Actions awaiting your approval.</p>
+                    </div>
+                    <span x-show="pendingActions.length > 0"
+                          class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-yellow-100 dark:bg-yellow-900 text-yellow-800 dark:text-yellow-200">
+                        <span x-text="pendingActions.length"></span> pending
+                    </span>
+                </div>
+
+                <div class="p-6">
+                    <!-- Empty state -->
+                    <div x-show="pendingActions.length === 0" class="text-center py-8">
+                        <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                        <h3 class="mt-2 text-sm font-medium text-gray-900 dark:text-white">No Pending Approvals</h3>
+                        <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
+                            All actions have been processed. Check back later.
+                        </p>
+                    </div>
+
+                    <!-- Pending actions list -->
+                    <div x-show="pendingActions.length > 0" class="space-y-4">
+                        <template x-for="action in pendingActions" :key="action.id">
+                            <div class="flex items-center justify-between p-4 border border-gray-200 dark:border-gray-700 rounded-lg">
+                                <div>
+                                    <span class="text-xs font-mono px-2 py-1 bg-gray-100 dark:bg-gray-700 rounded"
+                                          x-text="action.action_type"></span>
+                                    <p class="mt-1 text-sm text-gray-900 dark:text-white" x-text="action.description"></p>
+                                    <p class="text-xs text-gray-500 dark:text-gray-400" x-text="formatDate(action.created_at)"></p>
+                                </div>
+                                <div class="flex space-x-2">
+                                    <button @click="approveAction(action.id)"
+                                            class="px-3 py-1.5 text-xs font-medium text-white bg-green-600 hover:bg-green-700 rounded">
+                                        Approve
+                                    </button>
+                                    <button @click="rejectAction(action.id)"
+                                            class="px-3 py-1.5 text-xs font-medium text-white bg-red-600 hover:bg-red-700 rounded">
+                                        Reject
+                                    </button>
+                                </div>
+                            </div>
+                        </template>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Audit Log -->
+            <div class="bg-white dark:bg-gray-800 rounded-lg shadow border border-gray-200 dark:border-gray-700 overflow-hidden">
+                <div class="px-6 py-4 border-b border-gray-200 dark:border-gray-700 flex justify-between items-center">
+                    <div>
+                        <h2 class="text-lg font-semibold text-gray-900 dark:text-white">Audit Log</h2>
+                        <p class="text-sm text-gray-500 dark:text-gray-400">Recent AI agent actions and decisions.</p>
+                    </div>
+                    <button x-show="auditLog.length > 0"
+                            hx-delete="/api/supervision/audit"
+                            hx-target="#audit-clear-result"
+                            hx-swap="innerHTML"
+                            @htmx:after-request="loadAuditLog()"
+                            class="text-xs text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200">
+                        Clear Log
+                    </button>
+                </div>
+
+                <div class="p-6">
+                    <div id="audit-clear-result" class="mb-4"></div>
+
+                    <!-- Empty state -->
+                    <div x-show="auditLog.length === 0" class="text-center py-8">
+                        <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                        <h3 class="mt-2 text-sm font-medium text-gray-900 dark:text-white">No Recent Activity</h3>
+                        <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
+                            Agent actions will appear here once the system is running.
+                        </p>
+                    </div>
+
+                    <!-- Audit log entries -->
+                    <div x-show="auditLog.length > 0" class="space-y-2">
+                        <template x-for="entry in auditLog" :key="entry.id">
+                            <div class="flex items-center justify-between py-2 border-b border-gray-100 dark:border-gray-700 last:border-0">
+                                <div class="flex items-center space-x-3">
+                                    <!-- Result icon -->
+                                    <span x-show="entry.result === 'approved'" class="text-green-500">
+                                        <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                                            <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/>
+                                        </svg>
+                                    </span>
+                                    <span x-show="entry.result === 'rejected'" class="text-red-500">
+                                        <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                                            <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd"/>
+                                        </svg>
+                                    </span>
+                                    <span x-show="entry.result === 'auto_executed'" class="text-blue-500">
+                                        <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                                            <path fill-rule="evenodd" d="M11.3 1.046A1 1 0 0112 2v5h4a1 1 0 01.82 1.573l-7 10A1 1 0 018 18v-5H4a1 1 0 01-.82-1.573l7-10a1 1 0 011.12-.38z" clip-rule="evenodd"/>
+                                        </svg>
+                                    </span>
+                                    <div>
+                                        <p class="text-sm text-gray-900 dark:text-white" x-text="entry.action"></p>
+                                        <p x-show="entry.details" class="text-xs text-gray-500 dark:text-gray-400" x-text="entry.details"></p>
+                                    </div>
+                                </div>
+                                <span class="text-xs text-gray-400" x-text="formatDate(entry.timestamp)"></span>
+                            </div>
+                        </template>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </template>
+
+    <!-- Notification -->
+    <div x-show="notification" x-transition
+         class="fixed bottom-4 right-4 px-4 py-3 rounded-lg shadow-lg"
+         :class="notificationError ? 'bg-red-500 text-white' : 'bg-green-500 text-white'">
+        <span x-text="notification"></span>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+function supervisionControls() {
+    return {
+        loading: true,
+        saving: false,
+        level: 1,
+        savedLevel: 1,
+        lastUpdated: null,
+        pendingActions: [],
+        auditLog: [],
+        notification: '',
+        notificationError: false,
+
+        async loadData() {
+            this.loading = true;
+            try {
+                await Promise.all([
+                    this.loadLevel(),
+                    this.loadPendingActions(),
+                    this.loadAuditLog(),
+                ]);
+            } catch (error) {
+                console.error('Failed to load supervision data:', error);
+            }
+            this.loading = false;
+        },
+
+        async loadLevel() {
+            const res = await fetch('/api/supervision/level');
+            const data = await res.json();
+            this.level = data.level;
+            this.savedLevel = data.level;
+            this.lastUpdated = data.updated_at;
+        },
+
+        async loadPendingActions() {
+            const res = await fetch('/api/supervision/pending');
+            const data = await res.json();
+            this.pendingActions = data.actions || [];
+        },
+
+        async loadAuditLog() {
+            const res = await fetch('/api/supervision/audit?limit=20');
+            const data = await res.json();
+            this.auditLog = data.entries || [];
+        },
+
+        async saveLevel() {
+            this.saving = true;
+            try {
+                const res = await fetch(`/api/supervision/level?level=${this.level}`, {
+                    method: 'PUT',
+                });
+
+                if (!res.ok) {
+                    throw new Error('Failed to save level');
+                }
+
+                const data = await res.json();
+                this.savedLevel = data.level;
+                this.lastUpdated = new Date().toISOString();
+                this.showNotification(`Supervision level set to ${data.name}`);
+
+                // Refresh audit log
+                await this.loadAuditLog();
+            } catch (error) {
+                this.showNotification('Failed to save supervision level', true);
+                console.error('Save failed:', error);
+            }
+            this.saving = false;
+        },
+
+        async approveAction(actionId) {
+            try {
+                const res = await fetch(`/api/supervision/pending/${actionId}/approve`, {
+                    method: 'POST',
+                });
+
+                if (!res.ok) {
+                    throw new Error('Failed to approve action');
+                }
+
+                this.showNotification('Action approved');
+                await Promise.all([
+                    this.loadPendingActions(),
+                    this.loadAuditLog(),
+                ]);
+            } catch (error) {
+                this.showNotification('Failed to approve action', true);
+                console.error('Approve failed:', error);
+            }
+        },
+
+        async rejectAction(actionId) {
+            const reason = prompt('Reason for rejection (optional):');
+            try {
+                const res = await fetch(`/api/supervision/pending/${actionId}/reject?reason=${encodeURIComponent(reason || '')}`, {
+                    method: 'POST',
+                });
+
+                if (!res.ok) {
+                    throw new Error('Failed to reject action');
+                }
+
+                this.showNotification('Action rejected');
+                await Promise.all([
+                    this.loadPendingActions(),
+                    this.loadAuditLog(),
+                ]);
+            } catch (error) {
+                this.showNotification('Failed to reject action', true);
+                console.error('Reject failed:', error);
+            }
+        },
+
+        formatDate(isoString) {
+            if (!isoString) return '';
+            const date = new Date(isoString);
+            return date.toLocaleString();
+        },
+
+        showNotification(message, isError = false) {
+            this.notification = message;
+            this.notificationError = isError;
+            setTimeout(() => {
+                this.notification = '';
+            }, 3000);
+        }
+    };
+}
+</script>
+{% endblock %}

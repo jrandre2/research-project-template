@@ -83,6 +83,7 @@ For the complete project structure, see [README.md](../README.md#project-structu
 | `src/llm/` | LLM provider abstraction |
 | `src/spatial/` | Geospatial analysis module |
 | `src/agents/` | Project migration tools |
+| `src/gui/` | Web dashboard (FastAPI + HTMX) |
 | `data_raw/` | Raw input data (gitignored) |
 | `data_work/` | Processed data and diagnostics (gitignored) |
 | `manuscript_quarto/` | Quarto manuscript and figures |

@@ -42,6 +42,13 @@ jupyter>=1.0.0
 tabulate>=0.9.0
 ipython>=8.0.0
 
+# GUI (web dashboard)
+fastapi>=0.109.0
+uvicorn[standard]>=0.27.0
+jinja2>=3.1.0
+python-multipart>=0.0.6
+websockets>=12.0
+
 # Development (uncomment if needed)
 # pytest>=7.0.0
 # black>=23.0.0

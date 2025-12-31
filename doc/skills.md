@@ -509,6 +509,31 @@ python src/pipeline.py cache clear -s s03_estimation  # Clear specific stage
 
 ---
 
+## GUI Dashboard Skills
+
+### /gui
+
+Launch the web dashboard for human supervision.
+
+```bash
+python src/pipeline.py gui                    # Default: http://127.0.0.1:8000
+python src/pipeline.py gui --port 8001        # Custom port
+python src/pipeline.py gui --host 0.0.0.0     # Allow external connections
+python src/pipeline.py gui --no-reload        # Disable hot reload
+```
+
+**Features:**
+
+- Pipeline Dashboard: View stage status, run stages, cache management
+- Review Tracker: Kanban board for peer review comments
+- Supervision Controls: Set AI autonomy levels (0-4), audit log
+
+**Tech stack:** FastAPI + HTMX + Alpine.js + Tailwind CSS (CDN-served)
+
+**Note:** CLI remains the primary interface. GUI is for human monitoring and oversight.
+
+---
+
 ## Documentation Skills
 
 ### /update-docs

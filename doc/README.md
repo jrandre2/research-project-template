@@ -35,6 +35,7 @@
 | [REPRODUCTION.md](REPRODUCTION.md) | Full pipeline reproduction |
 | [skills.md](skills.md) | All CLI commands reference |
 | [agents.md](agents.md) | AI agent guidelines |
+| [GUI Dashboard](../CLAUDE.md#gui-dashboard) | Web interface for human supervision |
 
 ---
 

@@ -84,6 +84,10 @@ cache : Manage pipeline cache
     Actions: stats (show usage), clear (remove cached data)
     Options: --stage
 
+# GUI Dashboard
+gui : Launch the web dashboard for pipeline supervision
+    Options: --host, --port, --no-reload
+
 Usage
 -----
     python src/pipeline.py ingest_data
@@ -617,6 +621,25 @@ def parse_args() -> argparse.Namespace:
         help='Specific stage to target (default: all stages)'
     )
 
+    # GUI Dashboard Command
+    p_gui = sub.add_parser('gui', help='Launch the web dashboard')
+    p_gui.add_argument(
+        '--host',
+        default='127.0.0.1',
+        help='Host to bind to (default: 127.0.0.1)'
+    )
+    p_gui.add_argument(
+        '--port', '-p',
+        type=int,
+        default=8000,
+        help='Port to bind to (default: 8000)'
+    )
+    p_gui.add_argument(
+        '--no-reload',
+        action='store_true',
+        help='Disable auto-reload on code changes'
+    )
+
     return p.parse_args()
 
 
@@ -910,6 +933,17 @@ def main():
 
     elif args.cmd == 'list_stages':
         list_available_stages(args.prefix)
+
+    # GUI Dashboard Command
+    elif args.cmd == 'gui':
+        from gui.app import run_server
+        print(f"Starting CENTAUR Dashboard at http://{args.host}:{args.port}")
+        print("Press Ctrl+C to stop")
+        run_server(
+            host=args.host,
+            port=args.port,
+            reload=not args.no_reload,
+        )
 
     # Cache Management Commands
     elif args.cmd == 'cache':
