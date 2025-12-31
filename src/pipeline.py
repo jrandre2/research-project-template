@@ -238,12 +238,37 @@ def parse_args() -> argparse.Namespace:
         '--focus', '-f',
         default='general',
         choices=['economics', 'engineering', 'social_sciences', 'general', 'methods', 'policy', 'clarity'],
-        help='Focus area for review prompts (default: general)'
+        help='Focus area for synthetic review prompts (default: general)'
     )
     p_new.add_argument(
         '--discipline', '-d',
         dest='focus',
         help='(Deprecated, use --focus) Discipline for review prompts'
+    )
+    # New arguments for actual reviews
+    p_new.add_argument(
+        '--actual',
+        action='store_true',
+        help='Create an actual (journal) review instead of synthetic'
+    )
+    p_new.add_argument(
+        '--journal', '-j',
+        help='Journal name for actual reviews (e.g., "JEEM", "Nature")'
+    )
+    p_new.add_argument(
+        '--round', '-r',
+        dest='submission_round',
+        help='Submission round (e.g., "initial", "R&R1", "R&R2")'
+    )
+    p_new.add_argument(
+        '--decision',
+        choices=['major_revision', 'minor_revision', 'reject', 'accept'],
+        help='Editor decision for actual reviews'
+    )
+    p_new.add_argument(
+        '--reviewers',
+        nargs='+',
+        help='Reviewer identifiers (e.g., R1 R2 R3)'
     )
 
     p_archive = sub.add_parser('review_archive', help='Archive current cycle and reset')
@@ -251,6 +276,15 @@ def parse_args() -> argparse.Namespace:
         '--manuscript', '-m',
         default='main',
         help='Manuscript to archive (default: main)'
+    )
+    p_archive.add_argument(
+        '--no-tag',
+        action='store_true',
+        help='Skip creating a git tag for this archive'
+    )
+    p_archive.add_argument(
+        '--tag',
+        help='Custom git tag name (default: review-{manuscript}-{cycle}-complete)'
     )
 
     p_verify = sub.add_parser('review_verify', help='Run verification checklist')
@@ -261,6 +295,52 @@ def parse_args() -> argparse.Namespace:
     )
 
     sub.add_parser('review_report', help='Generate summary of all review cycles')
+
+    p_diff = sub.add_parser('review_diff', help='Generate diff between review cycles')
+    p_diff.add_argument(
+        '--manuscript', '-m',
+        default='main',
+        help='Manuscript to diff (default: main)'
+    )
+    p_diff.add_argument(
+        '--from', dest='from_cycle',
+        type=int,
+        help='Starting review cycle number'
+    )
+    p_diff.add_argument(
+        '--to', dest='to_cycle',
+        type=int,
+        help='Ending review cycle number'
+    )
+    p_diff.add_argument(
+        '--commit', '-c',
+        dest='from_commit',
+        help='Git commit to compare from'
+    )
+    p_diff.add_argument(
+        '--format',
+        choices=['markdown', 'unified'],
+        default='markdown',
+        help='Output format (default: markdown)'
+    )
+
+    p_response = sub.add_parser('review_response', help='Generate response letter from tracker')
+    p_response.add_argument(
+        '--manuscript', '-m',
+        default='main',
+        help='Manuscript to generate response for (default: main)'
+    )
+    p_response.add_argument(
+        '--format',
+        choices=['markdown'],
+        default='markdown',
+        help='Output format (default: markdown)'
+    )
+    p_response.add_argument(
+        '--include-diffs',
+        action='store_true',
+        help='Include file diffs inline in response'
+    )
 
     # Journal Configuration Commands
     sub.add_parser('journal_list', help='List available journal configurations')
@@ -598,11 +678,24 @@ def main():
 
     elif args.cmd == 'review_new':
         from stages import s07_reviews
-        s07_reviews.new_cycle(manuscript=args.manuscript, focus=args.focus)
+        source_type = 'actual' if args.actual else 'synthetic'
+        s07_reviews.new_cycle(
+            manuscript=args.manuscript,
+            focus=args.focus,
+            source_type=source_type,
+            journal=args.journal,
+            submission_round=args.submission_round,
+            decision=args.decision,
+            reviewer_ids=args.reviewers,
+        )
 
     elif args.cmd == 'review_archive':
         from stages import s07_reviews
-        s07_reviews.archive(manuscript=args.manuscript)
+        s07_reviews.archive(
+            manuscript=args.manuscript,
+            create_tag=not getattr(args, 'no_tag', False),
+            tag_name=getattr(args, 'tag', None),
+        )
 
     elif args.cmd == 'review_verify':
         from stages import s07_reviews
@@ -611,6 +704,24 @@ def main():
     elif args.cmd == 'review_report':
         from stages import s07_reviews
         s07_reviews.report()
+
+    elif args.cmd == 'review_diff':
+        from stages import s07_reviews
+        s07_reviews.diff(
+            manuscript=args.manuscript,
+            from_cycle=args.from_cycle,
+            to_cycle=args.to_cycle,
+            from_commit=args.from_commit,
+            format=args.format,
+        )
+
+    elif args.cmd == 'review_response':
+        from stages import s07_reviews
+        s07_reviews.generate_response_letter(
+            manuscript=args.manuscript,
+            format=args.format,
+            include_diffs=getattr(args, 'include_diffs', False),
+        )
 
     # Journal Configuration Commands
     elif args.cmd == 'journal_list':

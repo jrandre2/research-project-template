@@ -140,7 +140,9 @@ Use scripts for one-off analyses that shouldn't be part of the reproducible pipe
 - Supported by formal citations where needed
 - Free of implementation details visible only to developers
 
-## Synthetic Peer Review
+## Peer Review Management
+
+Supports both **synthetic** (AI-generated) and **actual** (journal) peer reviews.
 
 ### Workflow
 
@@ -150,10 +152,36 @@ Use scripts for one-off analyses that shouldn't be part of the reproducible pipe
 4. **Verify**: `python src/pipeline.py review_verify` (includes compliance checks)
 5. **Archive**: `python src/pipeline.py review_archive`
 
-### Focus Options
+### Synthetic vs Actual Reviews
+
+```bash
+# Synthetic review (default)
+python src/pipeline.py review_new -m main -f economics
+
+# Actual journal review
+python src/pipeline.py review_new -m main --actual \
+    --journal "JEEM" --round "R&R1" --reviewers R1 R2
+```
+
+### Focus Options (Synthetic)
 
 **Discipline-based:** economics, engineering, social_sciences, general
 **Aspect-based:** methods, policy, clarity
+
+### New Commands
+
+```bash
+# Generate diff between review cycles
+python src/pipeline.py review_diff -m main
+python src/pipeline.py review_diff -m main --commit abc123
+
+# Generate response letter
+python src/pipeline.py review_response -m main
+
+# Archive with git tag (default)
+python src/pipeline.py review_archive -m main
+python src/pipeline.py review_archive -m main --no-tag
+```
 
 ### Multi-Manuscript Support
 

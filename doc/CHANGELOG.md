@@ -4,6 +4,54 @@ All notable changes to this project are documented in this file.
 
 ---
 
+## [2025-12-30] - Enhanced Peer Review Versioning System
+
+### Added
+
+- **Review Source Tracking** (`src/stages/_review_models.py`)
+  - `ReviewMetadata` dataclass for structured review metadata
+  - `ReviewComment` dataclass for individual comment tracking
+  - Support for both synthetic (AI-generated) and actual (journal) reviews
+  - YAML frontmatter parsing utilities
+
+- **New CLI Commands**
+  - `review_diff`: Generate visual diffs between review cycles
+  - `review_response`: Auto-generate "Response to Reviewers" documents
+
+- **Git Integration** (`src/stages/s07_reviews.py`)
+  - `get_current_commit()`: Track commit at review start
+  - `create_review_tag()`: Tag commits on archive
+  - `get_commits_since()`: List commits during review cycle
+  - Automatic tagging on `review_archive` (configurable)
+
+- **Actual Review Support**
+  - `--actual` flag for `review_new` command
+  - `--journal`, `--round`, `--decision`, `--reviewers` options
+  - Journal metadata tracked in YAML frontmatter
+
+- **Configuration Settings** (`src/config.py`)
+  - `REVIEW_DEFAULT_SOURCE_TYPE`: synthetic or actual
+  - `REVIEW_GIT_TAGGING_ENABLED`: enable/disable git tags
+  - `REVIEW_GIT_TAG_FORMAT`: customizable tag format
+  - `REVIEW_RESPONSE_DEFAULT_FORMAT`: response letter format
+  - `REVIEW_DIFF_DEFAULT_FORMAT`: diff output format
+
+### Changed
+
+- `src/stages/s07_reviews.py`: Enhanced with new functions and options
+- `src/pipeline.py`: Added new review subcommands and arguments
+- `CLAUDE.md`: Updated peer review section with new commands
+
+### Documentation Updates
+
+- `doc/SYNTHETIC_REVIEW_PROCESS.md`: Renamed sections, added actual review docs
+- `doc/PIPELINE.md`: Updated Stage 07 with new commands and features
+- `doc/skills.md`: Added new review skills
+- `doc/reviews/README.md`: Updated for synthetic/actual distinction
+- `doc/README.md`: Renamed section, added new commands
+
+---
+
 ## [2025-12-30] - Documentation Review
 
 ### Updated

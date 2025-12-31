@@ -199,24 +199,42 @@ If you need a top-level export, copy from `manuscript_quarto/figures/` to `figur
 
 - `python src/pipeline.py review_status [-m manuscript]`
 - `python src/pipeline.py review_new [-m manuscript] [-f focus]`
+- `python src/pipeline.py review_new --actual [-j journal] [-r round]`
 - `python src/pipeline.py review_verify [-m manuscript]`
-- `python src/pipeline.py review_archive [-m manuscript]`
+- `python src/pipeline.py review_archive [-m manuscript] [--no-tag]`
+- `python src/pipeline.py review_diff [-m manuscript] [--from N] [--to M]`
+- `python src/pipeline.py review_response [-m manuscript]`
 - `python src/pipeline.py review_report`
 
 **Options:**
 
 - `--manuscript, -m`: Target manuscript (default: main)
 - `--focus, -f`: Review focus area (economics, engineering, social_sciences, general, methods, policy, clarity)
-- `--discipline, -d`: Deprecated alias for --focus
+- `--actual`: Mark as actual journal review (vs synthetic)
+- `--journal, -j`: Journal name for actual reviews
+- `--round, -r`: Submission round (initial, R&R1, R&R2)
+- `--decision`: Decision received (major_revision, minor_revision, reject, accept)
+- `--reviewers`: Reviewer IDs (R1 R2 R3)
+- `--no-tag`: Skip git tagging on archive
+- `--tag`: Custom git tag name
 
-**Purpose:** Manage synthetic peer review cycles and track responses. Supports multi-manuscript projects.
+**Purpose:** Manage both synthetic (AI-generated) and actual (journal) peer review cycles. Supports multi-manuscript projects with git integration for change tracking.
+
+**Features:**
+
+- **Synthetic reviews**: AI-generated reviews for pre-submission stress-testing
+- **Actual reviews**: Track journal reviews with metadata (journal, round, decision)
+- **Git integration**: Automatic commit tracking and tagging on archive
+- **Visual diffs**: Generate diffs between review cycles
+- **Response letters**: Auto-generate "Response to Reviewers" documents
 
 **Outputs:**
 
 - `manuscript_quarto/REVISION_TRACKER.md`
 - `doc/reviews/archive/` (archived reviews)
+- Git tags: `review-{manuscript}-{cycle:02d}-{status}`
 
-**Implementation:** `src/stages/s07_reviews.py`
+**Implementation:** `src/stages/s07_reviews.py`, `src/stages/_review_models.py`
 
 ---
 

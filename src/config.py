@@ -305,6 +305,29 @@ LLM_MAX_TOKENS = 4096  # Maximum tokens per response
 
 
 # =============================================================================
+# REVIEW MANAGEMENT SETTINGS
+# =============================================================================
+
+# Default source type for new reviews ('synthetic' or 'actual')
+REVIEW_DEFAULT_SOURCE_TYPE = 'synthetic'
+
+# Git integration for review cycles
+REVIEW_GIT_TAGGING_ENABLED = True
+REVIEW_GIT_TAG_FORMAT = 'review-{manuscript}-{cycle:02d}-{status}'
+
+# Response letter settings
+REVIEW_RESPONSE_DEFAULT_FORMAT = 'markdown'
+REVIEW_RESPONSE_TEMPLATE_DIR = DOC_DIR / 'reviews' / 'templates'
+
+# Diff generation settings
+REVIEW_DIFF_DEFAULT_FORMAT = 'markdown'
+REVIEW_DIFF_CONTEXT_LINES = 3
+
+# Archive structure (True = directory per review, False = legacy single file)
+REVIEW_USE_DIRECTORY_ARCHIVE = False  # Keep False for backward compat initially
+
+
+# =============================================================================
 # VALIDATION
 # =============================================================================
 

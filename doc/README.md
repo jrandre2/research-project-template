@@ -57,7 +57,7 @@ Start here based on your situation:
 
 ---
 
-## Synthetic Review System
+## Peer Review System
 
 | Document | Purpose |
 |----------|---------|
@@ -65,16 +65,30 @@ Start here based on your situation:
 | [MANUSCRIPT_REVISION_CHECKLIST.md](MANUSCRIPT_REVISION_CHECKLIST.md) | High-level revision status |
 | [reviews/README.md](reviews/README.md) | Review cycles index |
 
-**CLI Commands (with multi-manuscript support):**
+Supports both **synthetic** (AI-generated) and **actual** (journal) reviews.
 
-- `python src/pipeline.py review_status [-m main]` - Check status
-- `python src/pipeline.py review_new --focus methods` - Start new review with focus
-- `python src/pipeline.py review_new -m main -f economics` - Specify manuscript and focus
-- `python src/pipeline.py review_archive [-m main]` - Archive completed cycle
-- `python src/pipeline.py review_verify [-m main]` - Run verification (includes compliance checks)
-- `python src/pipeline.py review_report` - Summary report
+**CLI Commands:**
 
-**Focus Options:** economics, engineering, social_sciences, general, methods, policy, clarity
+```bash
+# Status and reports
+python src/pipeline.py review_status [-m main]
+python src/pipeline.py review_report
+
+# Synthetic reviews (pre-submission)
+python src/pipeline.py review_new --focus methods
+python src/pipeline.py review_new -m main -f economics
+
+# Actual reviews (from journals)
+python src/pipeline.py review_new --actual --journal "JEEM" --round "R&R1"
+
+# Workflow commands
+python src/pipeline.py review_verify [-m main]
+python src/pipeline.py review_archive [-m main]
+python src/pipeline.py review_diff [-m main]
+python src/pipeline.py review_response [-m main]
+```
+
+**Focus Options (synthetic):** economics, engineering, social_sciences, general, methods, policy, clarity
 
 ---
 
@@ -207,6 +221,7 @@ Future feature specifications and roadmap documents.
 | `src/data_audit.py` | Data auditing utilities |
 | `src/stages/` | Pipeline and workflow stages (s00-s09) |
 | `src/stages/_qa_utils.py` | QA report generation utilities |
+| `src/stages/_review_models.py` | Review metadata and comment dataclasses |
 | `src/llm/` | LLM provider abstraction (Anthropic, OpenAI) |
 | `src/agents/` | Project migration tools |
 | `src/utils/` | Shared utilities |

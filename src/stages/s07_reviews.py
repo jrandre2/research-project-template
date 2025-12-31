@@ -2,23 +2,29 @@
 """
 Stage 07: Review Management
 
-Purpose: Manage synthetic peer review cycles for manuscript development.
+Purpose: Manage peer review cycles for manuscript development.
 
-Supports multiple manuscripts with independent review tracking and focus-specific
-prompts for comprehensive pre-submission review.
+Supports both synthetic (AI-generated) and actual (journal) peer reviews,
+with multiple manuscripts and independent review tracking.
 
 Commands
 --------
 status : Display current review cycle status
-new    : Initialize a new review cycle with focus-specific template
+new    : Initialize a new review cycle (synthetic or actual)
 archive: Archive current cycle and reset for new one
 verify : Run verification checklist with journal compliance checks
 report : Generate summary report of all review cycles
 
 Usage
 -----
-    python src/pipeline.py review_status --manuscript main
+    # Synthetic review (default)
     python src/pipeline.py review_new --manuscript main --focus economics
+
+    # Actual journal review
+    python src/pipeline.py review_new --manuscript main --actual \\
+        --journal "JEEM" --round "R&R1" --reviewers R1 R2
+
+    python src/pipeline.py review_status --manuscript main
     python src/pipeline.py review_archive --manuscript main
     python src/pipeline.py review_verify --manuscript main
     python src/pipeline.py review_report
@@ -27,13 +33,19 @@ from __future__ import annotations
 
 import re
 import shutil
+import subprocess
 from datetime import datetime
 from pathlib import Path
-from typing import Optional
+from typing import Literal, Optional
 
 import sys
 sys.path.insert(0, str(Path(__file__).parent.parent))
 from stages._qa_utils import generate_qa_report, QAMetrics
+from stages._review_models import (
+    ReviewMetadata,
+    parse_frontmatter,
+    add_frontmatter,
+)
 
 # Define paths
 PROJECT_ROOT = Path(__file__).parent.parent.parent
@@ -266,6 +278,80 @@ DISCIPLINE_PROMPTS = FOCUS_PROMPTS
 
 
 # =============================================================================
+# GIT UTILITIES
+# =============================================================================
+
+def get_current_commit() -> Optional[str]:
+    """Get the current git commit SHA."""
+    try:
+        result = subprocess.run(
+            ['git', 'rev-parse', 'HEAD'],
+            capture_output=True,
+            text=True,
+            cwd=PROJECT_ROOT,
+        )
+        if result.returncode == 0:
+            return result.stdout.strip()[:12]  # Short SHA
+    except Exception:
+        pass
+    return None
+
+
+def create_review_tag(
+    manuscript: str,
+    cycle: int,
+    status: str = 'complete',
+) -> Optional[str]:
+    """
+    Create a git tag for a review cycle.
+
+    Parameters
+    ----------
+    manuscript : str
+        Manuscript name
+    cycle : int
+        Review cycle number
+    status : str
+        Tag status suffix (e.g., 'complete', 'start')
+
+    Returns
+    -------
+    str or None
+        Tag name if created successfully, None otherwise
+    """
+    tag_name = f"review-{manuscript}-{cycle:02d}-{status}"
+
+    try:
+        result = subprocess.run(
+            ['git', 'tag', tag_name],
+            capture_output=True,
+            text=True,
+            cwd=PROJECT_ROOT,
+        )
+        if result.returncode == 0:
+            return tag_name
+    except Exception:
+        pass
+    return None
+
+
+def get_commits_since(commit_sha: str) -> list[str]:
+    """Get list of commits since a given SHA."""
+    try:
+        result = subprocess.run(
+            ['git', 'log', f'{commit_sha}..HEAD', '--format=%h'],
+            capture_output=True,
+            text=True,
+            cwd=PROJECT_ROOT,
+        )
+        if result.returncode == 0:
+            return [c for c in result.stdout.strip().split('\n') if c]
+    except Exception:
+        pass
+    return []
+
+
+# =============================================================================
 # REVIEW MANAGEMENT FUNCTIONS
 # =============================================================================
 
@@ -273,28 +359,52 @@ def status(manuscript: str = None):
     """Display current review cycle status from REVISION_TRACKER.md."""
     paths = get_manuscript_paths(manuscript)
     tracker_file = paths['tracker_file']
+    manuscript_key = manuscript or DEFAULT_MANUSCRIPT
 
     print(f"Review Status: {paths['name']}")
     print("=" * 50)
 
     if not tracker_file.exists():
         print("\nNo active review cycle.")
-        print(f"Start one with: python src/pipeline.py review_new --manuscript {manuscript or DEFAULT_MANUSCRIPT} --focus <name>")
+        print(f"Start one with: python src/pipeline.py review_new --manuscript {manuscript_key} --focus <name>")
         return
 
     content = tracker_file.read_text()
 
-    # Parse summary statistics
+    # Try to parse YAML frontmatter for new format
+    frontmatter, body = parse_frontmatter(content)
+
     print(f"\nCurrent Tracker: {tracker_file}")
 
-    # Extract review number and focus
-    review_match = re.search(r'\*\*Review\*\*:\s*#?(\w+)', content)
-    focus_match = re.search(r'\*\*(?:Discipline|Focus)\*\*:\s*(\w+)', content)
+    if frontmatter:
+        # New format with YAML frontmatter
+        print(f"Review: #{frontmatter.get('cycle_number', '?')}")
+        print(f"Type: {frontmatter.get('source_type', 'synthetic').upper()}")
 
-    if review_match:
-        print(f"Review: #{review_match.group(1)}")
-    if focus_match:
-        print(f"Focus: {focus_match.group(1)}")
+        if frontmatter.get('source_type') == 'actual':
+            if frontmatter.get('journal'):
+                print(f"Journal: {frontmatter.get('journal')}")
+            if frontmatter.get('submission_round'):
+                print(f"Round: {frontmatter.get('submission_round')}")
+            if frontmatter.get('reviewer_ids'):
+                print(f"Reviewers: {', '.join(frontmatter.get('reviewer_ids', []))}")
+        else:
+            if frontmatter.get('focus'):
+                print(f"Focus: {frontmatter.get('focus')}")
+
+        if frontmatter.get('start_commit'):
+            print(f"Start commit: {frontmatter.get('start_commit')}")
+
+        content = body  # Use body for rest of parsing
+    else:
+        # Legacy format - parse from markdown
+        review_match = re.search(r'\*\*Review\*\*:\s*#?(\w+)', content)
+        focus_match = re.search(r'\*\*(?:Discipline|Focus)\*\*:\s*(\w+)', content)
+
+        if review_match:
+            print(f"Review: #{review_match.group(1)}")
+        if focus_match:
+            print(f"Focus: {focus_match.group(1)}")
 
     # Extract summary table
     summary_match = re.search(
@@ -323,18 +433,58 @@ def status(manuscript: str = None):
     print("\n" + "=" * 50)
 
 
-def new_cycle(manuscript: str = None, focus: str = 'general'):
-    """Initialize a new review cycle with focus-specific template."""
-    paths = get_manuscript_paths(manuscript)
+def new_cycle(
+    manuscript: str = None,
+    focus: str = 'general',
+    # New parameters for actual reviews
+    source_type: Literal['synthetic', 'actual'] = 'synthetic',
+    journal: str = None,
+    submission_round: str = None,
+    decision: str = None,
+    reviewer_ids: list[str] = None,
+):
+    """
+    Initialize a new review cycle.
 
-    if focus not in FOCUS_PROMPTS:
+    Parameters
+    ----------
+    manuscript : str, optional
+        Manuscript name. Defaults to DEFAULT_MANUSCRIPT.
+    focus : str
+        Focus area for synthetic reviews (e.g., 'economics', 'methods')
+    source_type : str
+        Either 'synthetic' or 'actual'
+    journal : str, optional
+        Journal name for actual reviews
+    submission_round : str, optional
+        Submission round (e.g., 'initial', 'R&R1')
+    decision : str, optional
+        Editor decision (e.g., 'major_revision', 'minor_revision')
+    reviewer_ids : list[str], optional
+        Reviewer identifiers (e.g., ['R1', 'R2'])
+    """
+    paths = get_manuscript_paths(manuscript)
+    manuscript_key = manuscript or DEFAULT_MANUSCRIPT
+
+    # Validate focus for synthetic reviews
+    if source_type == 'synthetic' and focus not in FOCUS_PROMPTS:
         print(f"ERROR: Unknown focus '{focus}'")
         print(f"Available: {', '.join(FOCUS_PROMPTS.keys())}")
         return
 
+    # Print header
     print(f"Initializing new review cycle")
     print(f"  Manuscript: {paths['name']}")
-    print(f"  Focus: {focus}")
+    print(f"  Type: {source_type.upper()}")
+    if source_type == 'synthetic':
+        print(f"  Focus: {focus}")
+    else:
+        if journal:
+            print(f"  Journal: {journal}")
+        if submission_round:
+            print(f"  Round: {submission_round}")
+        if reviewer_ids:
+            print(f"  Reviewers: {', '.join(reviewer_ids)}")
     print("=" * 50)
 
     # Ensure directories exist
@@ -357,27 +507,35 @@ def new_cycle(manuscript: str = None, focus: str = 'general'):
         content = tracker_file.read_text()
         if 'PENDING' in content.upper() or re.search(r'\|\s*\d+\s*\|\s*\d+\s*\|\s*\d+\s*\|\s*[1-9]', content):
             print("\nWARNING: Active review has pending items.")
-            print(f"Archive current review first with: python src/pipeline.py review_archive --manuscript {manuscript or DEFAULT_MANUSCRIPT}")
+            print(f"Archive current review first with: python src/pipeline.py review_archive --manuscript {manuscript_key}")
             return
+
+    # Create metadata
+    metadata = ReviewMetadata(
+        manuscript=manuscript_key,
+        cycle_number=review_num,
+        source_type=source_type,
+        focus=focus if source_type == 'synthetic' else None,
+        journal=journal,
+        submission_round=submission_round,
+        decision=decision,
+        reviewer_ids=reviewer_ids or [],
+        start_commit=get_current_commit(),
+        tracker_file=tracker_file,
+    )
 
     # Create new tracker from template
     today = datetime.now().strftime('%Y-%m-%d')
-    template = f'''# Revision Tracker: Response to Synthetic Review
 
-**Document**: {paths['title']}
+    if source_type == 'synthetic':
+        # Synthetic review template
+        title = "Revision Tracker: Response to Synthetic Review"
+        header_info = f'''**Document**: {paths['title']}
 **Review**: #{review_num}
+**Type**: Synthetic
 **Focus**: {focus}
-**Last Updated**: {today}
-
----
-
-## Summary Statistics
-
-| Category | Total | Addressed | Beyond Scope | Pending |
-|----------|-------|-----------|--------------|---------|
-| Major Comments | 0 | 0 | 0 | 0 |
-| Minor Comments | 0 | 0 | 0 | 0 |
-
+**Last Updated**: {today}'''
+        prompt_section = f'''
 ---
 
 ## Prompt Used
@@ -385,9 +543,57 @@ def new_cycle(manuscript: str = None, focus: str = 'general'):
 ```
 {FOCUS_PROMPTS[focus]}
 ```
+'''
+    else:
+        # Actual review template
+        title = "Revision Tracker: Response to Reviewer Comments"
+        header_parts = [
+            f"**Document**: {paths['title']}",
+            f"**Review**: #{review_num}",
+            "**Type**: Actual (Journal Review)",
+        ]
+        if journal:
+            header_parts.append(f"**Journal**: {journal}")
+        if submission_round:
+            header_parts.append(f"**Round**: {submission_round}")
+        if decision:
+            header_parts.append(f"**Decision**: {decision}")
+        if reviewer_ids:
+            header_parts.append(f"**Reviewers**: {', '.join(reviewer_ids)}")
+        header_parts.append(f"**Last Updated**: {today}")
+        header_info = '\n'.join(header_parts)
+        prompt_section = ''  # No prompt for actual reviews
+
+    # Build reviewer comment sections for actual reviews
+    if source_type == 'actual' and reviewer_ids:
+        reviewer_sections = []
+        for rid in reviewer_ids:
+            reviewer_sections.append(f'''
+## {rid} Comments
+
+### {rid} Major 1: [Title]
+
+**Status**: [VALID - ACTION NEEDED | ALREADY ADDRESSED | BEYOND SCOPE | INVALID]
+
+**Reviewer's Comment**:
+> [Paste {rid}'s comment here]
+
+**Validity Assessment**: [VALID | PARTIALLY VALID | INVALID]
+
+[Explain assessment]
+
+**Response**:
+
+[Describe response]
+
+**Files Modified**:
+- [Files]
 
 ---
-
+''')
+        comments_section = '\n'.join(reviewer_sections)
+    else:
+        comments_section = '''
 ## Major Comments
 
 ### Comment 1: [Title]
@@ -413,7 +619,21 @@ def new_cycle(manuscript: str = None, focus: str = 'general'):
 ## Minor Comments
 
 [Add minor comments as needed]
+'''
 
+    template = f'''# {title}
+
+{header_info}
+{prompt_section}
+---
+
+## Summary Statistics
+
+| Category | Total | Addressed | Beyond Scope | Pending |
+|----------|-------|-----------|--------------|---------|
+| Major Comments | 0 | 0 | 0 | 0 |
+| Minor Comments | 0 | 0 | 0 | 0 |
+{comments_section}
 ---
 
 ## Verification Checklist
@@ -432,20 +652,47 @@ def new_cycle(manuscript: str = None, focus: str = 'general'):
 *Last updated: {today}*
 '''
 
-    tracker_file.write_text(template)
+    # Add YAML frontmatter with metadata
+    final_content = add_frontmatter(template, metadata)
+    tracker_file.write_text(final_content)
+
     print(f"\nCreated: {tracker_file}")
-    print(f"\nReview #{review_num} initialized with {focus} focus.")
+    print(f"\nReview #{review_num} initialized ({source_type}).")
+
+    if metadata.start_commit:
+        print(f"Start commit: {metadata.start_commit}")
+
     print("\nNext steps:")
-    print("1. Generate a synthetic review using the prompt above")
-    print("2. Paste reviewer comments into the tracker")
+    if source_type == 'synthetic':
+        print("1. Generate a synthetic review using the prompt above")
+        print("2. Paste reviewer comments into the tracker")
+    else:
+        print("1. Paste the reviewer comments from the decision letter")
+        print("2. Organize by reviewer (R1, R2, etc.)")
     print("3. Triage each comment with a status classification")
     print("4. Implement changes and update tracker")
-    print(f"5. Run: python src/pipeline.py review_verify --manuscript {manuscript or DEFAULT_MANUSCRIPT}")
+    print(f"5. Run: python src/pipeline.py review_verify --manuscript {manuscript_key}")
 
 
-def archive(manuscript: str = None):
-    """Archive current review cycle and reset for new one."""
+def archive(
+    manuscript: str = None,
+    create_tag: bool = True,
+    tag_name: str = None,
+):
+    """
+    Archive current review cycle and reset for new one.
+
+    Parameters
+    ----------
+    manuscript : str, optional
+        Manuscript name. Defaults to DEFAULT_MANUSCRIPT.
+    create_tag : bool
+        Whether to create a git tag for this archive
+    tag_name : str, optional
+        Custom tag name. If not provided, uses default format.
+    """
     paths = get_manuscript_paths(manuscript)
+    manuscript_key = manuscript or DEFAULT_MANUSCRIPT
 
     print(f"Archiving Review Cycle: {paths['name']}")
     print("=" * 50)
@@ -458,14 +705,24 @@ def archive(manuscript: str = None):
     # Ensure archive directory exists
     paths['archive_dir'].mkdir(parents=True, exist_ok=True)
 
-    # Determine archive filename
     content = tracker_file.read_text()
-    review_match = re.search(r'\*\*Review\*\*:\s*#?(\d+)', content)
 
-    if review_match:
-        review_num = review_match.group(1)
+    # Try to parse YAML frontmatter for new format
+    frontmatter, body = parse_frontmatter(content)
+
+    if frontmatter:
+        review_num = frontmatter.get('cycle_number', 1)
+        source_type = frontmatter.get('source_type', 'synthetic')
+        start_commit = frontmatter.get('start_commit')
     else:
-        # Find next available number
+        # Legacy format
+        review_match = re.search(r'\*\*Review\*\*:\s*#?(\d+)', content)
+        review_num = int(review_match.group(1)) if review_match else 1
+        source_type = 'synthetic'
+        start_commit = None
+
+    # If no review_num found, find next available
+    if not review_num:
         existing = list(paths['archive_dir'].glob('review_*.md'))
         nums = [int(re.search(r'review_(\d+)', f.name).group(1))
                 for f in existing if re.search(r'review_(\d+)', f.name)]
@@ -473,16 +730,46 @@ def archive(manuscript: str = None):
 
     archive_file = paths['archive_dir'] / f'review_{int(review_num):02d}.md'
 
+    # Update metadata with end commit before archiving
+    end_commit = get_current_commit()
+    if frontmatter and end_commit:
+        # Update the frontmatter with end commit
+        frontmatter['end_commit'] = end_commit
+        frontmatter['archived_at'] = datetime.now().isoformat()
+        if start_commit:
+            frontmatter['response_commits'] = get_commits_since(start_commit)
+
+        # Rebuild content with updated frontmatter
+        import yaml
+        updated_frontmatter = yaml.dump(frontmatter, default_flow_style=False, sort_keys=False)
+        content = f"---\n{updated_frontmatter}---\n\n{body}"
+
     # Copy to archive
-    shutil.copy(tracker_file, archive_file)
+    with open(archive_file, 'w') as f:
+        f.write(content)
     print(f"Archived to: {archive_file}")
+
+    # Create git tag
+    if create_tag:
+        actual_tag = tag_name or f"review-{manuscript_key}-{review_num:02d}-complete"
+        created = create_review_tag(manuscript_key, review_num, 'complete')
+        if created:
+            print(f"Created git tag: {created}")
+        else:
+            print(f"Note: Could not create git tag (may already exist or not in git repo)")
+
+    # Show commits in this review cycle
+    if start_commit and end_commit:
+        commits = get_commits_since(start_commit)
+        if commits:
+            print(f"\nCommits in this review cycle: {len(commits)}")
 
     # Reset tracker
     tracker_file.unlink()
     print(f"Removed: {tracker_file}")
 
-    print(f"\nReview #{review_num} archived successfully.")
-    print(f"Start new review with: python src/pipeline.py review_new --manuscript {manuscript or DEFAULT_MANUSCRIPT} --focus <name>")
+    print(f"\nReview #{review_num} archived successfully ({source_type}).")
+    print(f"Start new review with: python src/pipeline.py review_new --manuscript {manuscript_key} --focus <name>")
 
 
 def verify(manuscript: str = None):
@@ -712,24 +999,490 @@ def check_abstract_length(manuscript_dir: Path) -> int:
 
 
 # =============================================================================
+# DIFF GENERATION
+# =============================================================================
+
+def get_manuscript_files(manuscript_dir: Path) -> dict[str, str]:
+    """Get content of all manuscript QMD files."""
+    files = {}
+    for qmd_file in sorted(manuscript_dir.glob('*.qmd')):
+        try:
+            files[qmd_file.name] = qmd_file.read_text()
+        except Exception:
+            continue
+    return files
+
+
+def get_files_at_commit(manuscript_dir: Path, commit: str) -> dict[str, str]:
+    """Get manuscript files at a specific git commit."""
+    files = {}
+    relative_dir = manuscript_dir.relative_to(PROJECT_ROOT)
+
+    for qmd_file in manuscript_dir.glob('*.qmd'):
+        relative_path = qmd_file.relative_to(PROJECT_ROOT)
+        try:
+            result = subprocess.run(
+                ['git', 'show', f'{commit}:{relative_path}'],
+                capture_output=True,
+                text=True,
+                cwd=PROJECT_ROOT,
+            )
+            if result.returncode == 0:
+                files[qmd_file.name] = result.stdout
+        except Exception:
+            continue
+
+    return files
+
+
+def generate_unified_diff(old_content: str, new_content: str, filename: str) -> str:
+    """Generate a unified diff between two versions of a file."""
+    import difflib
+
+    old_lines = old_content.splitlines(keepends=True)
+    new_lines = new_content.splitlines(keepends=True)
+
+    diff = difflib.unified_diff(
+        old_lines,
+        new_lines,
+        fromfile=f'a/{filename}',
+        tofile=f'b/{filename}',
+        lineterm='',
+    )
+    return ''.join(diff)
+
+
+def generate_markdown_diff(old_files: dict, new_files: dict) -> str:
+    """Generate a markdown-formatted diff report."""
+    output = []
+    output.append("# Manuscript Changes\n")
+
+    all_files = sorted(set(old_files.keys()) | set(new_files.keys()))
+
+    for filename in all_files:
+        old_content = old_files.get(filename, '')
+        new_content = new_files.get(filename, '')
+
+        if old_content == new_content:
+            continue
+
+        if not old_content:
+            output.append(f"\n## {filename} (NEW FILE)\n")
+            output.append("```\n")
+            output.append(new_content[:500])
+            if len(new_content) > 500:
+                output.append("\n... (truncated)")
+            output.append("\n```\n")
+        elif not new_content:
+            output.append(f"\n## {filename} (DELETED)\n")
+        else:
+            diff = generate_unified_diff(old_content, new_content, filename)
+            if diff:
+                output.append(f"\n## {filename}\n")
+                output.append("```diff\n")
+                output.append(diff)
+                output.append("\n```\n")
+
+    if len(output) == 1:
+        output.append("\nNo changes detected.\n")
+
+    return ''.join(output)
+
+
+def diff(
+    manuscript: str = None,
+    from_cycle: int = None,
+    to_cycle: int = None,
+    from_commit: str = None,
+    format: str = 'markdown',
+) -> Optional[Path]:
+    """
+    Generate diff between review cycles or commits.
+
+    Parameters
+    ----------
+    manuscript : str, optional
+        Manuscript name. Defaults to DEFAULT_MANUSCRIPT.
+    from_cycle : int, optional
+        Starting review cycle number. If not provided, uses previous cycle.
+    to_cycle : int, optional
+        Ending review cycle number. If not provided, uses current.
+    from_commit : str, optional
+        Git commit to compare from. Overrides from_cycle.
+    format : str
+        Output format ('markdown' or 'unified')
+
+    Returns
+    -------
+    Path or None
+        Path to generated diff file, or None if generation failed.
+    """
+    paths = get_manuscript_paths(manuscript)
+    manuscript_key = manuscript or DEFAULT_MANUSCRIPT
+
+    print(f"Generating Diff: {paths['name']}")
+    print("=" * 50)
+
+    # Get current manuscript content
+    current_files = get_manuscript_files(paths['manuscript_dir'])
+    if not current_files:
+        print("ERROR: No manuscript files found")
+        return None
+
+    # Determine comparison point
+    if from_commit:
+        print(f"Comparing against commit: {from_commit}")
+        old_files = get_files_at_commit(paths['manuscript_dir'], from_commit)
+    elif from_cycle:
+        # Find the commit for that cycle from archive
+        archive_file = paths['archive_dir'] / f'review_{from_cycle:02d}.md'
+        if not archive_file.exists():
+            print(f"ERROR: Review cycle {from_cycle} not found in archive")
+            return None
+
+        content = archive_file.read_text()
+        frontmatter, _ = parse_frontmatter(content)
+
+        if frontmatter and frontmatter.get('end_commit'):
+            from_commit = frontmatter['end_commit']
+            print(f"Using end commit from cycle {from_cycle}: {from_commit}")
+            old_files = get_files_at_commit(paths['manuscript_dir'], from_commit)
+        else:
+            print(f"ERROR: No commit info in review cycle {from_cycle}")
+            return None
+    else:
+        # Use start_commit from current tracker if available
+        tracker_file = paths['tracker_file']
+        if tracker_file.exists():
+            content = tracker_file.read_text()
+            frontmatter, _ = parse_frontmatter(content)
+            if frontmatter and frontmatter.get('start_commit'):
+                from_commit = frontmatter['start_commit']
+                print(f"Comparing against start of current cycle: {from_commit}")
+                old_files = get_files_at_commit(paths['manuscript_dir'], from_commit)
+            else:
+                print("ERROR: No start_commit in current tracker. Use --commit to specify.")
+                return None
+        else:
+            print("ERROR: No active review cycle. Use --commit to specify comparison point.")
+            return None
+
+    if not old_files:
+        print("WARNING: Could not retrieve old files from git. Showing current state only.")
+        old_files = {}
+
+    # Generate diff
+    if format == 'markdown':
+        diff_content = generate_markdown_diff(old_files, current_files)
+    else:
+        # Unified diff format
+        diffs = []
+        for filename in sorted(set(old_files.keys()) | set(current_files.keys())):
+            old = old_files.get(filename, '')
+            new = current_files.get(filename, '')
+            if old != new:
+                diffs.append(generate_unified_diff(old, new, filename))
+        diff_content = '\n'.join(diffs)
+
+    # Write to file
+    output_file = paths['reviews_dir'] / f'diff_{datetime.now().strftime("%Y%m%d_%H%M%S")}.md'
+    paths['reviews_dir'].mkdir(parents=True, exist_ok=True)
+    output_file.write_text(diff_content)
+
+    print(f"\nDiff generated: {output_file}")
+
+    # Show summary
+    changed_files = sum(1 for f in set(old_files.keys()) | set(current_files.keys())
+                        if old_files.get(f, '') != current_files.get(f, ''))
+    print(f"Files changed: {changed_files}")
+
+    return output_file
+
+
+# =============================================================================
+# RESPONSE LETTER GENERATION
+# =============================================================================
+
+def parse_tracker_comments(content: str) -> list[dict]:
+    """
+    Parse reviewer comments from REVISION_TRACKER.md content.
+
+    Returns list of comment dictionaries with keys:
+    - id: Comment identifier (e.g., "Comment 1", "R1 Major 1")
+    - type: 'major' or 'minor'
+    - reviewer: Reviewer identifier if present
+    - status: Status classification
+    - concern: Original reviewer comment
+    - response: Author's response
+    - files: List of files modified
+    """
+    comments = []
+
+    # Pattern for major comments
+    major_pattern = re.compile(
+        r'###\s+(?:(?P<reviewer>R\d+)\s+)?(?:Major\s+)?(?:Comment\s+)?(?P<num>\d+):\s*(?P<title>.+?)\n'
+        r'.*?\*\*Status\*\*:\s*(?P<status>[^\n]+)\n'
+        r'.*?\*\*(?:Reviewer\'s (?:Concern|Comment)|Original Comment)\*\*:\s*\n>\s*(?P<concern>.+?)\n'
+        r'.*?\*\*Response\*\*:\s*\n(?P<response>.+?)\n'
+        r'(?:\*\*Files Modified\*\*:\s*\n(?P<files>(?:- .+?\n)+))?',
+        re.DOTALL | re.IGNORECASE
+    )
+
+    for match in major_pattern.finditer(content):
+        files = []
+        if match.group('files'):
+            files = [f.strip('- \n') for f in match.group('files').strip().split('\n') if f.strip()]
+
+        comments.append({
+            'id': f"{match.group('reviewer') or ''} Major {match.group('num')}".strip(),
+            'type': 'major',
+            'title': match.group('title').strip(),
+            'reviewer': match.group('reviewer'),
+            'status': match.group('status').strip(),
+            'concern': match.group('concern').strip(),
+            'response': match.group('response').strip(),
+            'files': files,
+        })
+
+    # Pattern for minor comments (simpler format)
+    minor_pattern = re.compile(
+        r'###\s+Minor\s+(?P<num>\d+):\s*(?P<title>.+?)\n'
+        r'.*?\*\*Status\*\*:\s*(?P<status>[^\n]+)\n'
+        r'.*?\*\*(?:Concern|Comment)\*\*:\s*(?P<concern>.+?)\n'
+        r'.*?\*\*Response\*\*:\s*(?P<response>.+?)(?=\n---|$)',
+        re.DOTALL | re.IGNORECASE
+    )
+
+    for match in minor_pattern.finditer(content):
+        comments.append({
+            'id': f"Minor {match.group('num')}",
+            'type': 'minor',
+            'title': match.group('title').strip(),
+            'reviewer': None,
+            'status': match.group('status').strip(),
+            'concern': match.group('concern').strip(),
+            'response': match.group('response').strip(),
+            'files': [],
+        })
+
+    return comments
+
+
+def generate_response_letter(
+    manuscript: str = None,
+    format: str = 'markdown',
+    include_diffs: bool = False,
+) -> Optional[Path]:
+    """
+    Generate a response letter from the current REVISION_TRACKER.
+
+    Parameters
+    ----------
+    manuscript : str, optional
+        Manuscript name. Defaults to DEFAULT_MANUSCRIPT.
+    format : str
+        Output format ('markdown')
+    include_diffs : bool
+        Whether to include file diffs inline
+
+    Returns
+    -------
+    Path or None
+        Path to generated response letter, or None if generation failed.
+    """
+    paths = get_manuscript_paths(manuscript)
+    manuscript_key = manuscript or DEFAULT_MANUSCRIPT
+
+    print(f"Generating Response Letter: {paths['name']}")
+    print("=" * 50)
+
+    tracker_file = paths['tracker_file']
+    if not tracker_file.exists():
+        print("ERROR: No active review to generate response for")
+        return None
+
+    content = tracker_file.read_text()
+    frontmatter, body = parse_frontmatter(content)
+
+    # Extract metadata
+    if frontmatter:
+        source_type = frontmatter.get('source_type', 'synthetic')
+        cycle_number = frontmatter.get('cycle_number', 1)
+        journal = frontmatter.get('journal', '')
+        submission_round = frontmatter.get('submission_round', '')
+        reviewer_ids = frontmatter.get('reviewer_ids', [])
+    else:
+        source_type = 'synthetic'
+        cycle_number_match = re.search(r'\*\*Review\*\*:\s*#?(\d+)', content)
+        cycle_number = int(cycle_number_match.group(1)) if cycle_number_match else 1
+        journal = ''
+        submission_round = ''
+        reviewer_ids = []
+
+    # Parse comments
+    comments = parse_tracker_comments(body if frontmatter else content)
+
+    if not comments:
+        print("WARNING: No comments found in tracker")
+
+    today = datetime.now().strftime('%Y-%m-%d')
+
+    # Build response letter
+    output = []
+
+    if source_type == 'actual':
+        output.append("# Response to Reviewers\n\n")
+        if journal:
+            output.append(f"**Journal**: {journal}\n")
+        if submission_round:
+            output.append(f"**Submission Round**: {submission_round}\n")
+    else:
+        output.append("# Response to Synthetic Review\n\n")
+
+    output.append(f"**Manuscript**: {paths['title']}\n")
+    output.append(f"**Date**: {today}\n\n")
+
+    output.append("---\n\n")
+
+    # Summary of changes
+    addressed = sum(1 for c in comments if 'ADDRESSED' in c['status'].upper() or
+                    ('VALID' in c['status'].upper() and c['response'] and
+                     c['response'] != '[Describe response]'))
+    beyond_scope = sum(1 for c in comments if 'BEYOND SCOPE' in c['status'].upper())
+    pending = sum(1 for c in comments if 'ACTION NEEDED' in c['status'].upper() and
+                  (not c['response'] or c['response'] == '[Describe response]'))
+
+    output.append("## Summary of Changes\n\n")
+    output.append(f"- **Comments Addressed**: {addressed}\n")
+    output.append(f"- **Beyond Scope**: {beyond_scope}\n")
+    if pending > 0:
+        output.append(f"- **Pending**: {pending}\n")
+    output.append("\n")
+
+    # Group comments by reviewer if actual review
+    if source_type == 'actual' and reviewer_ids:
+        for rid in reviewer_ids:
+            reviewer_comments = [c for c in comments if c.get('reviewer') == rid]
+            if reviewer_comments:
+                output.append(f"## Response to {rid}\n\n")
+                for comment in reviewer_comments:
+                    _add_comment_to_response(output, comment)
+    else:
+        # All comments together
+        major_comments = [c for c in comments if c['type'] == 'major']
+        minor_comments = [c for c in comments if c['type'] == 'minor']
+
+        if major_comments:
+            output.append("## Major Comments\n\n")
+            for comment in major_comments:
+                _add_comment_to_response(output, comment)
+
+        if minor_comments:
+            output.append("## Minor Comments\n\n")
+            for comment in minor_comments:
+                _add_comment_to_response(output, comment)
+
+    # Footer
+    output.append("---\n\n")
+    output.append(f"*Generated by CENTAUR Review Management System on {today}*\n")
+
+    # Write to file
+    response_content = ''.join(output)
+    output_file = paths['reviews_dir'] / f'response_letter_{datetime.now().strftime("%Y%m%d_%H%M%S")}.md'
+    paths['reviews_dir'].mkdir(parents=True, exist_ok=True)
+    output_file.write_text(response_content)
+
+    print(f"\nResponse letter generated: {output_file}")
+    print(f"Comments included: {len(comments)}")
+
+    return output_file
+
+
+def _add_comment_to_response(output: list, comment: dict) -> None:
+    """Helper to add a comment to the response letter output."""
+    output.append(f"### {comment['id']}: {comment.get('title', 'Untitled')}\n\n")
+
+    output.append("**Reviewer's Comment:**\n")
+    output.append(f"> {comment['concern']}\n\n")
+
+    output.append("**Our Response:**\n")
+    response = comment['response']
+    if response and response != '[Describe response]':
+        output.append(f"{response}\n\n")
+    else:
+        output.append("*[Response pending]*\n\n")
+
+    if comment.get('files'):
+        output.append("**Files Modified:**\n")
+        for f in comment['files']:
+            output.append(f"- {f}\n")
+        output.append("\n")
+
+    output.append("---\n\n")
+
+
+# =============================================================================
 # MAIN ENTRY POINT
 # =============================================================================
 
-def main(action: str = 'status', manuscript: str = None, focus: str = 'general'):
+def main(
+    action: str = 'status',
+    manuscript: str = None,
+    focus: str = 'general',
+    # New parameters for actual reviews
+    source_type: str = 'synthetic',
+    journal: str = None,
+    submission_round: str = None,
+    decision: str = None,
+    reviewer_ids: list[str] = None,
+    # Archive parameters
+    create_tag: bool = True,
+    tag_name: str = None,
+    # Diff parameters
+    from_cycle: int = None,
+    to_cycle: int = None,
+    from_commit: str = None,
+    diff_format: str = 'markdown',
+):
     """Main entry point for review management."""
     if action == 'status':
         status(manuscript)
     elif action == 'new':
-        new_cycle(manuscript, focus)
+        new_cycle(
+            manuscript=manuscript,
+            focus=focus,
+            source_type=source_type,
+            journal=journal,
+            submission_round=submission_round,
+            decision=decision,
+            reviewer_ids=reviewer_ids,
+        )
     elif action == 'archive':
-        archive(manuscript)
+        archive(
+            manuscript=manuscript,
+            create_tag=create_tag,
+            tag_name=tag_name,
+        )
     elif action == 'verify':
         verify(manuscript)
     elif action == 'report':
         report()
+    elif action == 'diff':
+        diff(
+            manuscript=manuscript,
+            from_cycle=from_cycle,
+            to_cycle=to_cycle,
+            from_commit=from_commit,
+            format=diff_format,
+        )
+    elif action == 'response':
+        generate_response_letter(
+            manuscript=manuscript,
+            format=diff_format,
+        )
     else:
         print(f"Unknown action: {action}")
-        print("Available: status, new, archive, verify, report")
+        print("Available: status, new, archive, verify, report, diff, response")
 
 
 if __name__ == '__main__':

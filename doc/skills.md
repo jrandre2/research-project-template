@@ -114,15 +114,21 @@ Shows summary statistics, pending items, and verification progress.
 
 ### /review-new
 
-Start a new review cycle with a focus-specific prompt.
+Start a new review cycle (synthetic or actual).
 
 ```bash
+# SYNTHETIC REVIEWS (default)
 python src/pipeline.py review_new --focus economics
 python src/pipeline.py review_new -f engineering
 python src/pipeline.py review_new -m main -f methods    # with manuscript
+
+# ACTUAL REVIEWS (from journals)
+python src/pipeline.py review_new --actual --journal "JEEM" --round "R&R1"
+python src/pipeline.py review_new --actual -j "AER" -r "initial" --decision major_revision
+python src/pipeline.py review_new --actual -j "QJE" -r "R&R1" --reviewers R1 R2 R3
 ```
 
-**Focus Options:**
+**Focus Options (synthetic):**
 - `economics` - Identification, causal inference, econometrics
 - `engineering` - Reproducibility, benchmarks, validation
 - `social_sciences` - Theory, generalizability, ethics
@@ -131,6 +137,13 @@ python src/pipeline.py review_new -m main -f methods    # with manuscript
 - `policy` - Practitioner perspective, actionability
 - `clarity` - Writing quality, accessibility
 
+**Actual Review Options:**
+- `--actual` - Mark as actual (journal) review
+- `--journal, -j` - Journal name
+- `--round, -r` - Submission round (initial, R&R1, R&R2)
+- `--decision` - Decision (major_revision, minor_revision, reject, accept)
+- `--reviewers` - Reviewer IDs (R1 R2 R3)
+
 ### /review-archive
 
 Archive completed review cycle and reset for new one.
@@ -138,9 +151,32 @@ Archive completed review cycle and reset for new one.
 ```bash
 python src/pipeline.py review_archive
 python src/pipeline.py review_archive -m main    # specific manuscript
+python src/pipeline.py review_archive --no-tag   # skip git tagging
+python src/pipeline.py review_archive --tag "jeem-r1-final"  # custom tag
 ```
 
-Moves current tracker to `doc/reviews/archive/` and clears for next cycle.
+Moves current tracker to `doc/reviews/archive/`, creates git tag, and clears for next cycle.
+
+### /review-diff
+
+Generate visual diff between review cycles.
+
+```bash
+python src/pipeline.py review_diff -m main                    # current vs previous
+python src/pipeline.py review_diff -m main --from 1 --to 2    # between cycles
+python src/pipeline.py review_diff -m main --format markdown  # output format
+```
+
+### /review-response
+
+Generate "Response to Reviewers" letter from tracker.
+
+```bash
+python src/pipeline.py review_response -m main
+python src/pipeline.py review_response -m main --include-diffs
+```
+
+Parses REVISION_TRACKER.md and generates formatted response document.
 
 ### /review-verify
 
