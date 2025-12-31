@@ -26,6 +26,14 @@ try:
 except ImportError:
     HAS_GEOPANDAS = False
 
+# Check if fiona is available (required for some tests)
+try:
+    import fiona
+
+    HAS_FIONA = True
+except ImportError:
+    HAS_FIONA = False
+
 
 class TestSpatialFormats:
     """Tests for supported spatial formats."""
@@ -144,6 +152,7 @@ class TestSaveSpatial:
         assert result_path.exists()
         assert result_path.parent.exists()
 
+    @pytest.mark.skipif(not HAS_FIONA, reason="fiona not installed")
     def test_save_with_layer(self, sample_gdf, tmp_path):
         """Should save with specified layer name (GeoPackage)."""
         filepath = tmp_path / "output.gpkg"
@@ -201,6 +210,7 @@ class TestHasGeometry:
 
 
 @pytest.mark.skipif(not HAS_GEOPANDAS, reason="geopandas not installed")
+@pytest.mark.skipif(not HAS_FIONA, reason="fiona not installed")
 class TestListLayers:
     """Tests for list_layers function."""
 
