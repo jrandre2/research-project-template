@@ -20,7 +20,7 @@ Guidance for AI agents working on this project.
 │   └── AGENT_TOOLS.md # Migration tools reference
 ├── src/               # Pipeline code
 │   ├── pipeline.py    # Main CLI
-│   ├── stages/        # Pipeline stages (s00-s08)
+│   ├── stages/        # Pipeline stages (s00-s09)
 │   └── agents/        # Project migration tools
 ├── manuscript_quarto/ # Quarto manuscript
 └── data_work/         # Working data

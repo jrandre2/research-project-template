@@ -6,6 +6,8 @@
 
 ---
 
+> **Note:** For quick command syntax reference, see [skills.md](skills.md).
+
 ## TL;DR
 
 ```bash

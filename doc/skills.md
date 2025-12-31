@@ -2,11 +2,13 @@
 
 **Related**: [SYNTHETIC_REVIEW_PROCESS.md](SYNTHETIC_REVIEW_PROCESS.md) | [PIPELINE.md](PIPELINE.md)
 **Status**: Active
-**Last Updated**: 2025-12-27
+**Last Updated**: 2025-12-30
 
 ---
 
 Available skills and actions for research project management.
+
+> **Note:** For detailed stage documentation including data flow and outputs, see [PIPELINE.md](PIPELINE.md). This file provides quick command reference syntax.
 
 ## Pipeline Skills
 
@@ -15,10 +17,14 @@ Available skills and actions for research project management.
 Ingest raw data into the pipeline.
 
 ```bash
-python src/pipeline.py ingest_data
+python src/pipeline.py ingest_data           # Requires data in data_raw/
+python src/pipeline.py ingest_data --demo    # Generate synthetic demo data
 ```
 
-**Input:** `data_raw/`
+**Options:**
+- `--demo`: Generate synthetic demo data instead of reading from `data_raw/`
+
+**Input:** `data_raw/` (or synthetic data with `--demo`)
 **Output:** `data_work/data_raw.parquet`
 
 ### /link

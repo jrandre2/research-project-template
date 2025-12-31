@@ -1,5 +1,11 @@
 # System Architecture
 
+**Related**: [PIPELINE.md](PIPELINE.md) | [README.md](README.md)
+**Status**: Active
+**Last Updated**: 2025-12-30
+
+---
+
 This document describes the architecture of CENTAUR (Computational Environment for Navigating Tasks in Automated University Research), including data flow, component relationships, and extension points.
 
 ## Overview
@@ -53,95 +59,20 @@ Workflow tools (review management, journal configuration, and migration) sit alo
 
 ## Directory Structure
 
-```
-project/
-├── CLAUDE.md                    # AI agent instructions
-├── README.md                    # Project overview
-├── requirements.txt             # Python dependencies
-│
-├── data_raw/                    # Raw input data (gitignored)
-│   └── *.csv, *.xlsx           # Source files
-│
-├── data_work/                   # Processed data (gitignored)
-│   ├── *.parquet               # Main data files
-│   └── diagnostics/            # Validation and audit outputs
-│       ├── *.csv               # Stage diagnostics
-│       └── *.md                # Reports
-│
-├── doc/                         # Documentation
-│   ├── README.md               # Documentation index
-│   ├── ARCHITECTURE.md         # This file
-│   ├── PIPELINE.md             # Pipeline stages
-│   ├── METHODOLOGY.md          # Statistical methods
-│   ├── DATA_DICTIONARY.md      # Variable definitions
-│   ├── SYNTHETIC_REVIEW_PROCESS.md
-│   ├── MANUSCRIPT_REVISION_CHECKLIST.md
-│   ├── reviews/                # Review cycle archive
-│   └── CHANGELOG.md            # Version history
-│
-├── demo/                        # Minimal end-to-end demo
-│   ├── README.md               # Demo steps and expected outputs
-│   └── sample_data.csv         # Small sample dataset
-│
-├── figures/                     # Optional export figures
-│   └── *.png, *.pdf            # Publication figures
-│
-├── manuscript_quarto/           # Quarto manuscript
-│   ├── _quarto.yml             # Main config
-│   ├── _quarto-<journal>.yml   # Journal profiles
-│   ├── index.qmd               # Main manuscript
-│   ├── appendix-*.qmd          # Appendices
-│   ├── REVISION_TRACKER.md     # Active review tracker
-│   ├── code/                   # Quarto code chunks
-│   ├── data/                   # Manuscript data
-│   ├── figures/                # Manuscript figures
-│   ├── drafts/                 # AI-generated draft sections
-│   ├── variants/               # Divergent manuscript drafts
-│   └── journal_configs/        # Journal requirements
-│
-├── src/                         # Source code
-│   ├── pipeline.py             # Main CLI entry point
-│   ├── data_audit.py           # Data auditing
-│   ├── stages/                 # Pipeline and workflow stages (s00-s09)
-│   │   ├── s00_ingest.py      # Data ingestion
-│   │   ├── s01_link.py        # Record linkage
-│   │   ├── s02_panel.py       # Panel construction
-│   │   ├── s03_estimation.py  # Estimation
-│   │   ├── s04_robustness.py  # Robustness checks
-│   │   ├── s05_figures.py     # Figure generation
-│   │   ├── s06_manuscript.py  # Manuscript validation
-│   │   ├── s07_reviews.py     # Review management
-│   │   ├── s08_journal_parser.py # Journal configuration tools
-│   │   └── s09_writing.py     # AI-assisted manuscript drafting
-│   ├── llm/                    # LLM provider abstraction
-│   │   ├── __init__.py        # Provider factory
-│   │   ├── base.py            # LLMProvider Protocol
-│   │   ├── anthropic.py       # Claude provider
-│   │   ├── openai.py          # GPT-4 provider
-│   │   └── prompts.py         # Prompt templates
-│   ├── agents/                 # Project migration tools
-│   │   ├── project_analyzer.py
-│   │   ├── structure_mapper.py
-│   │   ├── migration_planner.py
-│   │   └── migration_executor.py
-│   └── utils/                  # Shared utilities
-│       ├── helpers.py         # Common functions
-│       ├── validation.py      # Data validation
-│       ├── figure_style.py    # Plot styling
-│       └── synthetic_data.py  # Demo data generation
-│
-├── tests/                       # Test suite
-│   ├── conftest.py            # Shared fixtures
-│   ├── fixtures/              # Test data generators
-│   ├── test_pipeline.py       # CLI tests
-│   ├── test_stages/           # Stage tests
-│   └── test_utils/            # Utility tests
-│
-└── tools/
-    └── bin/
-        └── quarto              # Quarto wrapper
-```
+For the complete project structure, see [README.md](../README.md#project-structure) in the project root.
 
+**Key directories:**
+
+| Directory | Purpose |
+|-----------|---------|
+| `src/stages/` | Pipeline stages (s00-s09) |
+| `src/utils/` | Shared utilities (helpers, validation, cache, spatial_cv, etc.) |
+| `src/llm/` | LLM provider abstraction |
+| `src/spatial/` | Geospatial analysis module |
+| `src/agents/` | Project migration tools |
+| `data_raw/` | Raw input data (gitignored) |
+| `data_work/` | Processed data and diagnostics (gitignored) |
+| `manuscript_quarto/` | Quarto manuscript and figures |
 
 ## Data Flow
 
@@ -234,7 +165,11 @@ COMMANDS = {
     'journal_compare': 's08_journal_parser.compare_manuscript()',
     'journal_fetch': 's08_journal_parser.fetch_guidelines_cli()',
     'journal_parse': 's08_journal_parser.parse_guidelines()',
+    'draft_results': 's09_writing.draft_results()',
+    'draft_captions': 's09_writing.draft_captions()',
+    'draft_abstract': 's09_writing.draft_abstract()',
     'audit_data': 'data_audit.main()',
+    'cache': 'cache_management()',
 }
 ```
 
@@ -496,15 +431,35 @@ pytest --cov=src tests/
 - Process in chunks when memory-constrained
 - Leverage pandas query optimization
 
-### Parallel Processing (Optional)
+### Parallel Execution
 
-- Stages are independent by design, but no built-in parallel runner is provided
-- If you add parallelization, keep outputs deterministic and document ordering assumptions
+The pipeline includes built-in parallel execution for CPU-intensive stages:
 
-### Caching (Optional)
+- `ProcessPoolExecutor` for estimation and robustness (CPU-bound)
+- `ThreadPoolExecutor` for figure generation (I/O-bound)
+- Configure via `PARALLEL_ENABLED` and `PARALLEL_MAX_WORKERS` in `src/config.py`
+- Disable with `--sequential` flag or `--workers 1`
 
-- Intermediate outputs are saved as parquet by each stage
-- If you add caching or skip logic, document the criteria and provide an explicit override flag
+### Caching
+
+Built-in result caching dramatically improves re-run performance:
+
+- Cache stored in `data_work/.cache/<stage_name>/`
+- Automatic invalidation on data or config changes
+- Manage with `python src/pipeline.py cache stats` and `cache clear`
+- Disable with `--no-cache` flag for fresh computation
+- Configure via `CACHE_ENABLED` and `CACHE_MAX_AGE_HOURS` in `src/config.py`
+
+### Spatial Operations
+
+The `src/spatial/` module has specific performance considerations:
+
+- **Distance matrices**: O(n²) memory - use `max_distance` filter for large datasets
+- **Spatial indexes**: GeoPandas automatically uses R-tree for `sjoin()` operations
+- **CRS projection**: Project to UTM for accurate distance/area calculations
+- **File formats**: GeoPackage (.gpkg) is faster than Shapefile for large datasets
+
+See [GEOSPATIAL_ANALYSIS.md](GEOSPATIAL_ANALYSIS.md#performance-guidelines) for detailed guidance.
 
 ## Error Handling
 

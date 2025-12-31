@@ -145,6 +145,27 @@ RANDOM_STATE = 42
 
 
 # =============================================================================
+# GEOSPATIAL SETTINGS
+# =============================================================================
+
+# Enable geospatial features (requires geopandas, shapely, pyproj)
+SPATIAL_ENABLED = True
+
+# Default coordinate reference system
+SPATIAL_DEFAULT_CRS = "EPSG:4326"  # WGS84
+
+# Spatial data directory
+SPATIAL_DATA_DIR = DATA_WORK_DIR / 'spatial'
+
+# Geocoding cache directory
+SPATIAL_CACHE_DIR = CACHE_DIR / 'spatial'
+
+# Geocoding settings (for future phases)
+GEOCODING_PROVIDER = "census"  # 'census', 'nominatim', 'google', 'here'
+GEOCODING_CACHE_TTL_DAYS = 30
+
+
+# =============================================================================
 # ML MODEL HYPERPARAMETER GRIDS (for tuning)
 # =============================================================================
 
@@ -325,7 +346,7 @@ def validate_config() -> bool:
 
 def ensure_directories() -> None:
     """Create required directories if they don't exist."""
-    for path in [DATA_RAW_DIR, DATA_WORK_DIR, DIAGNOSTICS_DIR, FIGURES_DIR, QA_REPORTS_DIR, CACHE_DIR, DRAFTS_DIR]:
+    for path in [DATA_RAW_DIR, DATA_WORK_DIR, DIAGNOSTICS_DIR, FIGURES_DIR, QA_REPORTS_DIR, CACHE_DIR, DRAFTS_DIR, SPATIAL_DATA_DIR, SPATIAL_CACHE_DIR]:
         path.mkdir(parents=True, exist_ok=True)
 
 

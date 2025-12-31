@@ -26,7 +26,6 @@ Licensing: code is PolyForm Noncommercial 1.0.0 and documentation/manuscript con
 - Project migration tools for onboarding legacy codebases
 - Data audit utilities for sample attrition and diagnostics
 - Spatial cross-validation for geographic data (optional geopandas dependency)
-- ML model registry with hyperparameter tuning support
 
 **Planned:** Multilanguage analysis support (R, Stata, Julia) - see [doc/design/MULTILANGUAGE_ANALYSIS.md](doc/design/MULTILANGUAGE_ANALYSIS.md)
 

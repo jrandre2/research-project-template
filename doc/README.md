@@ -2,7 +2,7 @@
 
 **Project**: CENTAUR (Computational Environment for Navigating Tasks in Automated University Research)
 **Scope**: Research workflow platform (not project-specific analysis)
-**Last Updated**: 2025-12-27
+**Last Updated**: 2025-12-30
 
 ---
 
@@ -123,6 +123,35 @@ python src/pipeline.py run_stage s00_ingest     # Run specific stage
 
 ---
 
+## Geospatial Analysis
+
+The `src/spatial/` module provides core utilities for working with geographic data.
+
+| Document | Purpose |
+|----------|---------|
+| [GEOSPATIAL_ANALYSIS.md](GEOSPATIAL_ANALYSIS.md) | Module guide and API reference |
+| [design/GEOSPATIAL_MODULE.md](design/GEOSPATIAL_MODULE.md) | Full design and roadmap |
+
+**Quick Usage:**
+
+```python
+from spatial import load_spatial, haversine_distance, ensure_crs
+
+gdf = load_spatial('data.gpkg')
+gdf = ensure_crs(gdf, 'EPSG:4326')
+dist = haversine_distance(40.7, -74.0, 34.1, -118.2)  # NYC to LA
+```
+
+**Key Functions:**
+- `load_spatial()`, `save_spatial()` - Spatial data I/O (GeoPackage, Shapefile, GeoJSON)
+- `haversine_distance()`, `haversine_matrix()` - Distance calculations
+- `nearest_neighbor()`, `distance_to_nearest()` - Proximity analysis
+- `ensure_crs()`, `to_projected()` - CRS handling
+
+**Dependencies:** `geopandas`, `shapely`, `pyproj` (install with `pip install -r requirements-spatial.txt`)
+
+---
+
 ## Journal Configuration
 
 **CLI Commands:**
@@ -194,6 +223,7 @@ Future feature specifications and roadmap documents.
 | `utils/synthetic_data.py` | Demo data generation |
 | `utils/spatial_cv.py` | Spatial cross-validation grouping |
 | `utils/cache.py` | Result caching utilities |
+| `utils/docx_feedback.py` | DOCX document feedback extraction |
 
 ---
 
@@ -205,7 +235,6 @@ AI-powered tools for analyzing and migrating external research projects.
 |----------|---------|
 | [AGENT_TOOLS.md](AGENT_TOOLS.md) | Agent module reference and API |
 | [skills.md](skills.md) | Migration skills (/analyze-project, /map-project, etc.) |
-| [MIGRATION_PLAN_capacity-sem.md](MIGRATION_PLAN_capacity-sem.md) | Example migration plan |
 
 ### Agent Modules
 

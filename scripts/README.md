@@ -6,7 +6,7 @@
 
 ## Why Separate Scripts?
 
-The core pipeline (`src/stages/s00-s08`) handles:
+The core pipeline (`src/stages/s00-s09`) handles:
 
 - Data ingestion and cleaning
 - Record linkage and panel construction

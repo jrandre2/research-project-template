@@ -198,6 +198,29 @@ LLM_TEMPERATURE = 0.3
 
 See `doc/skills.md` for full command reference.
 
+## Geospatial Analysis
+
+The `src/spatial/` module provides utilities for geographic data analysis.
+
+```python
+from spatial import load_spatial, haversine_distance, ensure_crs
+
+# Load and prepare spatial data
+gdf = load_spatial('data.gpkg')
+gdf = ensure_crs(gdf, 'EPSG:4326')
+
+# Calculate distances
+dist = haversine_distance(40.7, -74.0, 34.1, -118.2)  # NYC to LA in meters
+```
+
+**Key functions:**
+- `load_spatial()`, `save_spatial()` - Spatial I/O (GeoPackage, Shapefile, GeoJSON)
+- `haversine_distance()`, `haversine_matrix()` - Distance calculations
+- `nearest_neighbor()`, `distance_to_nearest()` - Proximity analysis
+- `ensure_crs()`, `to_projected()` - CRS handling
+
+See `doc/GEOSPATIAL_ANALYSIS.md` for full documentation.
+
 ## Key References
 
 | Topic | Document |
@@ -208,4 +231,5 @@ See `doc/skills.md` for full command reference.
 | Skills and actions | `doc/skills.md` |
 | Statistical methods | `doc/METHODOLOGY.md` |
 | Troubleshooting | `doc/agents.md` |
+| Geospatial analysis | `doc/GEOSPATIAL_ANALYSIS.md` |
 | Multilanguage support (planned) | `doc/design/MULTILANGUAGE_ANALYSIS.md` |

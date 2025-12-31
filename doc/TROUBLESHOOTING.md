@@ -2,7 +2,7 @@
 
 **Related**: [TESTING.md](TESTING.md) | [PIPELINE.md](PIPELINE.md)
 **Status**: Active
-**Last Updated**: 2025-12-27
+**Last Updated**: 2025-12-30
 
 ---
 
@@ -233,6 +233,24 @@ pytest tests/
 
 ---
 
+### Geospatial Module
+
+For detailed geospatial troubleshooting, see [GEOSPATIAL_ANALYSIS.md](GEOSPATIAL_ANALYSIS.md#troubleshooting).
+
+Common issues:
+- **Installation errors**: GDAL/GEOS dependencies on Windows - use conda instead of pip
+- **CRS errors**: Always check CRS matches before spatial operations
+- **Coordinate order**: Shapely uses (lon, lat), haversine uses (lat, lon)
+- **Memory errors with distance matrix**: Use `nearest_neighbor()` with `max_distance` for large datasets
+
+Quick fix for missing CRS:
+```python
+from spatial import ensure_crs
+gdf = ensure_crs(gdf, 'EPSG:4326', allow_override=True)
+```
+
+---
+
 ## Environment Issues
 
 ### Virtual environment problems
@@ -266,7 +284,7 @@ pip freeze > requirements.txt
 2. **Run tests**: `pytest -v` to check if environment is working
 3. **Enable verbose output**: Add `-v` or `--verbose` to commands
 4. **Check logs**: Look for error messages in terminal output
-5. **Report issues**: https://github.com/anthropics/claude-code/issues
+5. **Report issues**: Open an issue in your project's repository
 
 ---
 
