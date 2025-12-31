@@ -260,4 +260,5 @@ See `doc/GEOSPATIAL_ANALYSIS.md` for full documentation.
 | Statistical methods | `doc/METHODOLOGY.md` |
 | Troubleshooting | `doc/agents.md` |
 | Geospatial analysis | `doc/GEOSPATIAL_ANALYSIS.md` |
+| AI agent orchestration | `doc/design/AI_AGENT_ORCHESTRATION.md` |
 | Multilanguage support (planned) | `doc/design/MULTILANGUAGE_ANALYSIS.md` |

@@ -57,6 +57,19 @@ The system is designed as a modular research pipeline with clear separation betw
 
 Workflow tools (review management, journal configuration, and migration) sit alongside the core pipeline and operate on `doc/`, `manuscript_quarto/`, and external project directories.
 
+### AI Agent Orchestration (Design)
+
+CENTAUR is designed to be operated by AI agents of varying capabilities at different supervision levels. The orchestration layer (see [design/AI_AGENT_ORCHESTRATION.md](design/AI_AGENT_ORCHESTRATION.md)) specifies:
+
+- **Graduated supervision**: Five levels from fully human (0) to autonomous (4)
+- **Multi-model routing**: Provider-agnostic capability tiers (simple/standard/complex)
+- **Operator patterns**: Human, AI assistant, autonomous agent, multi-agent coordination
+
+This enables the same pipeline to be operated by:
+- A human researcher running CLI commands directly
+- An AI assistant (Claude Code) executing on the human's behalf
+- An autonomous agent running scheduled tasks
+
 ## Directory Structure
 
 For the complete project structure, see [README.md](../README.md#project-structure) in the project root.
