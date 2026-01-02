@@ -1,0 +1,79 @@
+# CENTAUR Estimation Specifications
+# Language-agnostic specification definitions for statistical estimation
+#
+# Usage:
+#   python src/pipeline.py run_estimation --specification baseline
+#   python src/pipeline.py run_estimation --engine r --specification baseline
+#
+# Each specification defines:
+#   - outcome: Dependent variable
+#   - treatment: Main independent variable of interest
+#   - controls: Additional control variables (optional)
+#   - fixed_effects: Fixed effects to absorb (optional)
+#   - cluster: Variable for clustered standard errors (optional)
+#   - description: Human-readable description
+
+baseline:
+  outcome: outcome
+  treatment: treatment
+  controls: []
+  fixed_effects:
+    - unit_fe
+    - time_fe
+  cluster: id
+  description: Baseline specification with unit and time fixed effects
+
+no_fe:
+  outcome: outcome
+  treatment: treatment
+  controls: []
+  fixed_effects: []
+  cluster: null
+  description: Simple OLS without fixed effects
+
+with_controls:
+  outcome: outcome
+  treatment: treatment
+  controls:
+    - covariate_1
+    - covariate_2
+    - covariate_3
+  fixed_effects:
+    - unit_fe
+    - time_fe
+  cluster: id
+  description: Baseline with additional control variables
+
+unit_fe_only:
+  outcome: outcome
+  treatment: treatment
+  controls: []
+  fixed_effects:
+    - unit_fe
+  cluster: id
+  description: Unit fixed effects only (no time effects)
+
+time_fe_only:
+  outcome: outcome
+  treatment: treatment
+  controls: []
+  fixed_effects:
+    - time_fe
+  cluster: id
+  description: Time fixed effects only (no unit effects)
+
+# Example of a more complex specification with interactions
+# Uncomment and customize as needed:
+#
+# with_interactions:
+#   outcome: outcome
+#   treatment: treatment
+#   controls:
+#     - covariate_1
+#     - covariate_2
+#     - treatment:covariate_1  # Interaction term (R syntax)
+#   fixed_effects:
+#     - unit_fe
+#     - time_fe
+#   cluster: id
+#   description: Baseline with treatment heterogeneity by covariate_1

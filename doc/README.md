@@ -46,6 +46,7 @@
 | Peer Review | [SYNTHETIC_REVIEW_PROCESS.md](SYNTHETIC_REVIEW_PROCESS.md) | — |
 | Geospatial | [GEOSPATIAL_ANALYSIS.md](GEOSPATIAL_ANALYSIS.md) | [design/GEOSPATIAL_MODULE.md](design/GEOSPATIAL_MODULE.md) |
 | Project Migration | [AGENT_TOOLS.md](AGENT_TOOLS.md) | — |
+| Multilanguage Analysis | [MULTILANGUAGE_SETUP.md](MULTILANGUAGE_SETUP.md) | [design/MULTILANGUAGE_ANALYSIS.md](design/MULTILANGUAGE_ANALYSIS.md) |
 
 ---
 
@@ -54,7 +55,6 @@
 | Document | Scope |
 |----------|-------|
 | [design/AI_AGENT_ORCHESTRATION.md](design/AI_AGENT_ORCHESTRATION.md) | Multi-model routing, supervision levels |
-| [design/MULTILANGUAGE_ANALYSIS.md](design/MULTILANGUAGE_ANALYSIS.md) | R, Stata, Julia support |
 | [design/QUALITATIVE_MODULE.md](design/QUALITATIVE_MODULE.md) | Qualitative & mixed methods |
 
 ---

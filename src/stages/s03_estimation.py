@@ -520,6 +520,7 @@ def main(
     use_cache: bool = True,
     parallel: bool = True,
     n_workers: Optional[int] = None,
+    engine: Optional[str] = None,
 ):
     """
     Execute estimation pipeline.
@@ -540,12 +541,30 @@ def main(
         Use parallel execution for multiple specs (default: True)
     n_workers : int, optional
         Number of parallel workers (default: CPU count)
+    engine : str, optional
+        Analysis engine to use ('python', 'r', 'stata').
+        Default: use ANALYSIS_ENGINE from config.
     """
     start_time = time.time()
 
     print("=" * 60)
     print("Stage 03: Estimation")
     print("=" * 60)
+
+    # Display engine info if specified
+    if engine:
+        try:
+            from analysis.factory import get_engine, list_engines
+            available = list_engines()
+            if engine in available and available[engine]:
+                eng = get_engine(engine)
+                print(f"\n  Using engine: {engine} ({eng.version})")
+            else:
+                print(f"\n  WARNING: Engine '{engine}' not available, using Python")
+                engine = None
+        except ImportError:
+            print(f"\n  WARNING: Analysis package not available, using default")
+            engine = None
 
     # Initialize cache
     cache = CacheManager('s03_estimation', enabled=use_cache and CACHE_ENABLED)

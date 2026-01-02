@@ -284,6 +284,24 @@ DRAFTS_DIR = MANUSCRIPT_DIR / 'drafts'
 
 
 # =============================================================================
+# ANALYSIS ENGINE SETTINGS
+# =============================================================================
+
+# Default analysis engine ('python' or 'r')
+import os
+ANALYSIS_ENGINE = os.getenv('CENTAUR_ANALYSIS_ENGINE', 'python')
+
+# External tool paths (auto-detected if not set)
+R_EXECUTABLE = os.getenv('R_EXECUTABLE', 'Rscript')
+
+# Timeout for external processes (seconds)
+EXTERNAL_PROCESS_TIMEOUT = int(os.getenv('EXTERNAL_PROCESS_TIMEOUT', '3600'))
+
+# Language-agnostic specifications file
+SPECIFICATIONS_FILE = PROJECT_ROOT / 'specifications.yml'
+
+
+# =============================================================================
 # LLM SETTINGS (AI-Assisted Writing)
 # =============================================================================
 

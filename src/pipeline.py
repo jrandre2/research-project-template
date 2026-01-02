@@ -174,6 +174,12 @@ def parse_args() -> argparse.Namespace:
         default=None,
         help='Number of parallel workers (default: auto)'
     )
+    p_est.add_argument(
+        '--engine', '-e',
+        choices=['python', 'r'],
+        default=None,
+        help='Analysis engine (default: from config)'
+    )
 
     p_robust = sub.add_parser('estimate_robustness', help='Run robustness checks')
     p_robust.add_argument(
@@ -640,6 +646,14 @@ def parse_args() -> argparse.Namespace:
         help='Disable auto-reload on code changes'
     )
 
+    # Analysis Engine Commands
+    p_engines = sub.add_parser('engines', help='Manage analysis engines')
+    p_engines.add_argument(
+        'action',
+        choices=['list', 'check'],
+        help='Engine action: list (show available) or check (validate installations)'
+    )
+
     return p.parse_args()
 
 
@@ -669,6 +683,7 @@ def main():
             use_cache=not args.no_cache,
             parallel=not args.sequential,
             n_workers=args.workers,
+            engine=args.engine,
         )
 
     elif args.cmd == 'estimate_robustness':
@@ -944,6 +959,34 @@ def main():
             port=args.port,
             reload=not args.no_reload,
         )
+
+    # Analysis Engine Commands
+    elif args.cmd == 'engines':
+        from analysis.factory import list_engines, get_engine_info
+
+        if args.action == 'list':
+            print("=" * 50)
+            print("Analysis Engines")
+            print("=" * 50)
+            engines = list_engines()
+            for name, available in engines.items():
+                status = "available" if available else "not found"
+                print(f"  {name}: {status}")
+            print()
+            print("Use 'engines check' for detailed validation.")
+
+        elif args.action == 'check':
+            print("=" * 50)
+            print("Engine Validation")
+            print("=" * 50)
+            engines = list_engines()
+            for name in engines:
+                info = get_engine_info(name)
+                status = "OK" if info['available'] else "FAILED"
+                print(f"\n{name}:")
+                print(f"  Status:  {status}")
+                print(f"  Version: {info['version']}")
+                print(f"  Details: {info['message']}")
 
     # Cache Management Commands
     elif args.cmd == 'cache':

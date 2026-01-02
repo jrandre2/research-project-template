@@ -111,6 +111,7 @@ data_raw/ ──► ingest_data ──► data_work/data_raw.parquet
 **Options:**
 - `--specification, -s`: Specification name (default: baseline)
 - `--sample`: Sample restriction (default: full)
+- `--engine, -e`: Analysis engine (python, r) - see [Multilanguage Analysis](#multilanguage-analysis)
 
 **Purpose:** Run primary estimation specifications.
 
@@ -646,6 +647,65 @@ Contiguity-based methods require geopandas:
 
 ```bash
 pip install -r requirements-spatial.txt
+```
+
+---
+
+## Multilanguage Analysis
+
+CENTAUR supports multiple analysis engines for estimation, allowing researchers to use their preferred statistical environment while keeping pipeline orchestration in Python.
+
+**Setup Guide:** [MULTILANGUAGE_SETUP.md](MULTILANGUAGE_SETUP.md)
+
+### Available Engines
+
+| Engine | Package | Status |
+|--------|---------|--------|
+| `python` | NumPy/pandas | Default, always available |
+| `r` | fixest | Available if R installed with required packages |
+
+### Engine Commands
+
+```bash
+# List available engines and their status
+python src/pipeline.py engines list
+
+# Validate engine installations
+python src/pipeline.py engines check
+```
+
+### Using a Specific Engine
+
+```bash
+# Run estimation with R/fixest
+python src/pipeline.py run_estimation --specification baseline --engine r
+
+# Or set default in environment
+export CENTAUR_ANALYSIS_ENGINE=r
+python src/pipeline.py run_estimation --specification baseline
+```
+
+### Configuration
+
+Engine settings in `src/config.py`:
+
+```python
+ANALYSIS_ENGINE = os.getenv('CENTAUR_ANALYSIS_ENGINE', 'python')
+R_EXECUTABLE = os.getenv('R_EXECUTABLE', 'Rscript')
+EXTERNAL_PROCESS_TIMEOUT = 3600  # seconds
+```
+
+### R Engine Requirements
+
+The R engine requires:
+
+- R 4.0+ with `Rscript` in PATH
+- Packages: `arrow`, `fixest`, `jsonlite`
+
+Install R packages:
+
+```r
+install.packages(c("arrow", "fixest", "jsonlite"))
 ```
 
 ---

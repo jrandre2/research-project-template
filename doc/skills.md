@@ -56,11 +56,14 @@ Run primary estimation.
 ```bash
 python src/pipeline.py run_estimation --specification baseline
 python src/pipeline.py run_estimation -s with_controls --sample restricted
+python src/pipeline.py run_estimation -s baseline --engine r    # Use R/fixest
 ```
 
 **Options:**
+
 - `--specification, -s`: Specification name (default: baseline)
 - `--sample`: Sample restriction (default: full)
+- `--engine, -e`: Analysis engine (python, r) - see [Engine Management Skills](#engine-management-skills)
 
 **Output:** `data_work/diagnostics/`
 
@@ -474,6 +477,38 @@ python src/pipeline.py audit_data --output audit.json
 - `--output, -o`: Custom output path for JSON report
 
 **Output:** Console summary and optional JSON/markdown reports.
+
+---
+
+## Engine Management Skills
+
+Manage analysis engines for multilanguage estimation support.
+
+### /engines-list
+
+List available analysis engines and their status.
+
+```bash
+python src/pipeline.py engines list
+```
+
+**Output:** Table showing each engine, availability status, and version info.
+
+### /engines-check
+
+Validate engine installations with detailed diagnostics.
+
+```bash
+python src/pipeline.py engines check
+```
+
+**Output:** Detailed validation results for each registered engine, including:
+
+- Package availability
+- Version information
+- Missing dependencies
+
+**Setup Guide:** See [MULTILANGUAGE_SETUP.md](MULTILANGUAGE_SETUP.md) for R engine installation.
 
 ---
 

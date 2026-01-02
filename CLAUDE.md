@@ -305,6 +305,33 @@ python src/pipeline.py gui --no-reload
 
 **Note:** CLI remains the primary interface. GUI is for human monitoring and oversight.
 
+## Multilanguage Analysis
+
+Run estimations using Python or R engines.
+
+```bash
+# Check available engines
+python src/pipeline.py engines list
+python src/pipeline.py engines check
+
+# Run estimation with specific engine
+python src/pipeline.py run_estimation --engine r --specification baseline
+```
+
+**Supported engines:**
+
+- `python` (default): Native NumPy implementation
+- `r`: Uses fixest package for fast fixed effects
+
+**Configuration in `src/config.py`:**
+
+```python
+ANALYSIS_ENGINE = 'python'  # Default engine
+R_EXECUTABLE = 'Rscript'
+```
+
+See `doc/MULTILANGUAGE_SETUP.md` for installation and setup.
+
 ## Key References
 
 | Topic | Document |
@@ -317,4 +344,5 @@ python src/pipeline.py gui --no-reload
 | Troubleshooting | `doc/agents.md` |
 | Geospatial analysis | `doc/GEOSPATIAL_ANALYSIS.md` |
 | AI agent orchestration | `doc/design/AI_AGENT_ORCHESTRATION.md` |
-| Multilanguage support (planned) | `doc/design/MULTILANGUAGE_ANALYSIS.md` |
+| Multilanguage setup | `doc/MULTILANGUAGE_SETUP.md` |
+| Multilanguage design | `doc/design/MULTILANGUAGE_ANALYSIS.md` |

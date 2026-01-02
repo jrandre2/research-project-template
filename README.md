@@ -27,7 +27,7 @@ Licensing: code is PolyForm Noncommercial 1.0.0 and documentation/manuscript con
 - Data audit utilities for sample attrition and diagnostics
 - Spatial cross-validation for geographic data (optional geopandas dependency)
 
-**Planned:** Multilanguage analysis support (R, Stata, Julia) - see [doc/design/MULTILANGUAGE_ANALYSIS.md](doc/design/MULTILANGUAGE_ANALYSIS.md)
+**Multilanguage Analysis:** R support available (Python default). See [doc/MULTILANGUAGE_SETUP.md](doc/MULTILANGUAGE_SETUP.md) for setup guide.
 
 ## Workflow Notes
 
@@ -121,6 +121,10 @@ See `demo/README.md` for a small sample dataset and expected outputs that exerci
 │   │   ├── anthropic.py   # Claude provider
 │   │   ├── openai.py      # GPT-4 provider
 │   │   └── prompts.py     # Prompt templates
+│   ├── analysis/          # Multilanguage analysis engines
+│   │   ├── base.py        # Engine protocol and EstimationResult
+│   │   ├── factory.py     # Engine registry
+│   │   └── engines/       # Python, R engine implementations
 │   ├── agents/            # Project migration tools
 │   │   ├── project_analyzer.py
 │   │   ├── structure_mapper.py
@@ -201,6 +205,12 @@ Generate draft manuscript sections using LLMs (requires API key):
 - `python src/pipeline.py draft_abstract --max-words 200`
 
 Configure provider in `src/config.py` (anthropic or openai). Set `ANTHROPIC_API_KEY` or `OPENAI_API_KEY` environment variable.
+
+### Analysis Engines
+
+- `python src/pipeline.py engines list` - List available engines
+- `python src/pipeline.py engines check` - Validate engine installations
+- `python src/pipeline.py run_estimation --engine r` - Use R/fixest for estimation
 
 ### Cache Management
 

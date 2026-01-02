@@ -10,6 +10,15 @@ This module provides common fixtures used across test modules including:
 """
 from __future__ import annotations
 
+import sys
+from pathlib import Path
+
+# Add src directory to Python path for test imports
+_project_root = Path(__file__).parent.parent
+_src_path = _project_root / 'src'
+if str(_src_path) not in sys.path:
+    sys.path.insert(0, str(_src_path))
+
 import pytest
 import pandas as pd
 import numpy as np

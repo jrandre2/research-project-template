@@ -1,8 +1,8 @@
 # Multilanguage Analysis Engine Support
 
-**Related**: [ARCHITECTURE.md](../ARCHITECTURE.md) | [PIPELINE.md](../PIPELINE.md)
-**Status**: Planned
-**Last Updated**: 2025-12-27
+**Related**: [ARCHITECTURE.md](../ARCHITECTURE.md) | [PIPELINE.md](../PIPELINE.md) | [MULTILANGUAGE_SETUP.md](../MULTILANGUAGE_SETUP.md)
+**Status**: In Progress (R complete, Stata/Julia planned)
+**Last Updated**: 2026-01-02
 
 ---
 
@@ -695,41 +695,47 @@ jobs:
 
 ## Implementation Milestones
 
-### Milestone 1: Abstraction Layer
-- [ ] Create `src/analysis/base.py` with Protocol and EstimationResult
-- [ ] Create `src/analysis/factory.py` with registry
-- [ ] Create `src/analysis/specifications.py` for YAML loading
-- [ ] Create `specifications.yml` template
-- [ ] Add config options to `src/config.py`
-- [ ] Add `engines list` and `engines check` CLI commands
+### Milestone 1: Abstraction Layer ✅
 
-### Milestone 2: Python Engine Refactor
-- [ ] Extract estimation logic from `s03_estimation.py`
-- [ ] Create `src/analysis/engines/python_engine.py`
-- [ ] Update `s03_estimation.py` to use factory
-- [ ] Add `--engine` flag to CLI
-- [ ] Migrate existing tests
+- [x] Create `src/analysis/base.py` with Protocol and EstimationResult
+- [x] Create `src/analysis/factory.py` with registry
+- [x] Create `src/analysis/specifications.py` for YAML loading
+- [x] Create `specifications.yml` template
+- [x] Add config options to `src/config.py`
+- [x] Add `engines list` and `engines check` CLI commands
 
-### Milestone 3: R Engine
-- [ ] Create `src/analysis/engines/r/estimate.R`
-- [ ] Create `src/analysis/engines/r_engine.py`
-- [ ] Add R engine tests
-- [ ] Test coefficient consistency with Python
+### Milestone 2: Python Engine Refactor ✅
 
-### Milestone 4: Stata Engine
+- [x] Extract estimation logic from `s03_estimation.py`
+- [x] Create `src/analysis/engines/python_engine.py`
+- [x] Update `s03_estimation.py` to use factory
+- [x] Add `--engine` flag to CLI
+- [x] Migrate existing tests
+
+### Milestone 3: R Engine ✅
+
+- [x] Create `src/analysis/engines/r/estimate.R`
+- [x] Create `src/analysis/engines/r_engine.py`
+- [x] Add R engine tests
+- [x] Test coefficient consistency with Python
+
+### Milestone 4: Stata Engine (Deferred)
+
 - [ ] Create `src/analysis/engines/stata/estimate.do`
 - [ ] Create `src/analysis/engines/stata_engine.py`
 - [ ] Add Stata engine tests (skip in CI if no license)
 
-### Milestone 5: Julia Engine
+### Milestone 5: Julia Engine (Planned)
+
 - [ ] Create `src/analysis/engines/julia/estimate.jl`
 - [ ] Create `src/analysis/engines/julia_engine.py`
 - [ ] Add Julia engine tests
 
-### Milestone 6: Documentation & Polish
-- [ ] Update all existing docs
+### Milestone 6: Documentation & Polish ✅
+
+- [x] Update all existing docs
 - [ ] Add CI workflows for R/Julia
-- [ ] Update CHANGELOG
+- [x] Update CHANGELOG
 
 ---
 
