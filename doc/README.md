@@ -55,6 +55,7 @@
 | Document | Scope |
 |----------|-------|
 | [design/AI_AGENT_ORCHESTRATION.md](design/AI_AGENT_ORCHESTRATION.md) | Multi-model routing, supervision levels |
+| [design/LIBRARY_PACKAGING.md](design/LIBRARY_PACKAGING.md) | Extracting reusable components as `centaur-tools` (Python) + `centaurR` (R) |
 | [design/QUALITATIVE_MODULE.md](design/QUALITATIVE_MODULE.md) | Qualitative & mixed methods |
 
 ---
